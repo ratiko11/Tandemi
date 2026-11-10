@@ -5,6 +5,7 @@
 const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const UPDATE = require('./updater.js');
 
 if (!app.requestSingleInstanceLock()) { app.quit(); return; } // a second start just brings the window forward
 
@@ -46,7 +47,13 @@ function menu() {
     ] },
     { role: 'editMenu' },
     { label: 'View', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' }] },
-    { label: 'Help', submenu: [{ label: 'How Tandemi works (README)', click: () => shell.openPath(path.join(ROOT, 'README.md')) }] },
+    { label: 'Help', submenu: [
+      { label: 'How Tandemi works (README)', click: () => shell.openPath(path.join(ROOT, 'README.md')) },
+      { label: 'Check for updates…', click: () => UPDATE.check({ manual: true }) },
+      { label: 'Tandemi on GitHub', click: () => shell.openExternal('https://github.com/ratiko11/Tandemi') },
+      { type: 'separator' },
+      { label: `Version ${app.getVersion()}`, enabled: false },
+    ] },
   ]));
 }
 
@@ -58,6 +65,7 @@ app.whenReady().then(async () => {
     const srv = require(path.join(ENGINE, 'server.js'));
     await srv.ready; url = srv.url();
     if (win) win.loadURL(url);
+    UPDATE.start(() => win);
   } catch (e) {
     dialog.showErrorBox('Tandemi could not start', `${e.message}\n\nIs another program using port 3000? Close it and start Tandemi again.`);
     app.quit();

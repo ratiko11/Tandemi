@@ -1,7 +1,7 @@
 {
   "name": "tandemi-desktop",
   "productName": "Tandemi",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Tandemi: merges developers' work by the code's structure, tests it, and sends every bug to whoever caused it.",
   "main": "main.js",
   "author": "Rati Shetsiruli",
@@ -26,6 +26,7 @@
     },
     "files": [
       "main.js",
+      "updater.js",
       "loading.html",
       "icon.png"
     ],

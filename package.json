@@ -1,6 +1,6 @@
 {
   "name": "tandemi",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "description": "Tandemi: merges two developers' work by the code's structure, tests it, and sends every bug to whoever caused it. For people (web page), AI coders (MCP) and GitHub (merge bot).",
   "private": true,
   "scripts": {
