@@ -138,6 +138,10 @@ Tandemi's own agents fix bugs and combine conflicts with Claude, in one of two w
 
 ---
 
+## License
+
+© 2026 Rati Shetsiruli. Tandemi is free for personal use, study, students, schools and open-source projects, under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Using it in a company or in anything sold needs a separate license: ask on [GitHub](https://github.com/ratiko11/Tandemi/issues). The licenses of the parts Tandemi includes (tree-sitter, acorn, the fonts) are in `engine/vendor`.
+
 ## ქართულად
 
 **Tandemi** პოულობს merge-ის კონფლიქტებს, რომლებსაც git ვერ ხედავს, და ზუსტად ამბობს, ვინ რა უნდა გაასწოროს. ორი ან მეტი დეველოპერის კოდს კოდის სტრუქტურით აერთიანებს (კლასები, მეთოდები, ველები; C#, JavaScript, TypeScript, Python, Java, C++, Go), ამიტომ ცალკეული ცვლილებები ერთმანეთს არ ეჯახება. მერე ააწყობს და დატესტავს ცალ-ცალკე თითოეულ მხარეს და გაერთიანებულ კოდს, და ყოველ ბაგს იმას უგზავნის, ვინც გატეხილი ხაზი დაწერა.
