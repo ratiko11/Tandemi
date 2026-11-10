@@ -1,0 +1,8 @@
+node_modules/
+.pairplay/
+projects/
+final/
+samples/cat-runner/
+desktop/dist/
+anthropic-key.txt
+*.log

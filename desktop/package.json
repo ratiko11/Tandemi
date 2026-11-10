@@ -1,0 +1,88 @@
+{
+  "name": "tandemi-desktop",
+  "productName": "Tandemi",
+  "version": "2.4.2",
+  "description": "Tandemi: merges developers' work by the code's structure, tests it, and sends every bug to whoever caused it.",
+  "main": "main.js",
+  "author": "Rati Shetsiruli",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never",
+    "dist:mac": "electron-builder --mac dmg --publish never",
+    "dist:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8",
+    "resedit": "^1.7.2"
+  },
+  "build": {
+    "appId": "app.tandemi.desktop",
+    "productName": "Tandemi",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "loading.html",
+      "icon.png"
+    ],
+    "extraResources": [
+      {
+        "from": "../engine",
+        "to": "tandemi/engine",
+        "filter": [
+          "**/*",
+          "!**/node_modules/**",
+          "!pairplay.html",
+          "!dashboard.html",
+          "!projects.html",
+          "!claude-local.js"
+        ]
+      },
+      {
+        "from": "../samples",
+        "to": "tandemi/samples",
+        "filter": [
+          "cat-runner.bundle"
+        ]
+      },
+      {
+        "from": "../tandemi.config.json",
+        "to": "tandemi/tandemi.config.json"
+      },
+      {
+        "from": "../README.md",
+        "to": "tandemi/README.md"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tandemi",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icon.png",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icon.png"
+    },
+    "afterPack": "./icon-hook.js",
+    "publish": []
+  }
+}

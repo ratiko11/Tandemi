@@ -1,0 +1,38 @@
+name: Tandemi merge check
+description: Merges each pull request with its base by the code's structure, builds and tests both sides and the merge, and comments exactly who has to fix what.
+author: Rati Shetsiruli
+branding:
+  icon: git-merge
+  color: orange
+inputs:
+  github-token:
+    description: Token used to comment on the pull request and push the merge branch.
+    default: ${{ github.token }}
+  anthropic-api-key:
+    description: Optional. Lets Tandemi's agents combine real conflicts and fix bugs (only kept when the tests pass).
+    required: false
+    default: ''
+  push-merge:
+    description: When git can't merge but Tandemi can, push Tandemi's merge to a branch tandemi/pr-<number>.
+    default: 'true'
+  fix:
+    description: Let the AI agents try to fix the bugs (needs anthropic-api-key).
+    default: 'false'
+  fail-on-bugs:
+    description: Mark the check as failed when bugs or unsolved conflicts remain.
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Tandemi
+      shell: bash
+      run: node "${{ github.action_path }}/engine/bot.js" --github
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        TANDEMI_PUSH_MERGE: ${{ inputs.push-merge }}
+        TANDEMI_FIX: ${{ inputs.fix }}
+        TANDEMI_FAIL_ON_BUGS: ${{ inputs.fail-on-bugs }}

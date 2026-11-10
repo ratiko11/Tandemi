@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tandemi</title>
+<style>
+/* Tandemi: two developers' code in, one tested merge out, every bug addressed to whoever wrote the line. */
+@font-face { font-family: "Unbounded"; src: url(/fonts/unbounded-latin-wght-normal.woff2) format("woff2"); font-weight: 200 900; font-display: swap; }
+@font-face { font-family: "Lexend"; src: url(/fonts/lexend-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Lexend"; src: url(/fonts/lexend-latin-ext-wght-normal.woff2) format("woff2"); font-weight: 100 900; font-display: swap; unicode-range: U+0100-024F, U+1E00-1EFF; }
+@font-face { font-family: "JetBrains Mono"; src: url(/fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2"); font-weight: 100 800; font-display: swap; }
+/* Arcade: a merge is two people teaming up. Bold ink outlines and sticker shadows on the moments that matter
+   (who, the score, a clash); code, diffs and long lists stay calm and thin so they are easy to read. */
+:root {
+  --bg: #EDE8FF; --surface: #FFFFFF; --code: #F6F4FF; --line: #D9D3F2; --ink: #17142B; --muted: #5C5878; --edge: #17142B;
+  --a: #C4196F; --a-fill: #FF6FAE; --a-soft: #FFE0EE; --b: #0A7FA3; --b-fill: #2EC4E8; --b-soft: #D4F4FC;
+  --sun: #FFD23F; --pass: #13824F; --pass-fill: #3DDC97; --pass-soft: #D7F7E8; --fail: #D32F2F; --fail-fill: #FF5A4E; --fail-soft: #FFE3E0; --warn: #8A5A00; --warn-soft: #FFF3C4;
+  --on-accent: #17142B; --pop: 5px 5px 0 var(--edge); --pop-s: 3px 3px 0 var(--edge); --bw: 2.5px;
+  --shadow: none;
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Lexend", "Segoe UI", "Noto Sans Georgian", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+/* dark: when Windows is dark and the setting is "system", or when the setting says dark */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1B1730; --surface: #272240; --code: #201C37; --line: #3A3460; --ink: #F2EEFF; --muted: #A7A1CC; --edge: #0B0916;
+  --a: #FF8CC0; --a-fill: #FF6FAE; --a-soft: #3D1D33; --b: #6FD8F2; --b-fill: #2EC4E8; --b-soft: #14313D;
+  --pass: #5BE3A6; --pass-fill: #3DDC97; --pass-soft: #163327; --fail: #FF8A80; --fail-fill: #FF5A4E; --fail-soft: #3A1A1D; --warn: #FFD66B; --warn-soft: #3A3017;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #1B1730; --surface: #272240; --code: #201C37; --line: #3A3460; --ink: #F2EEFF; --muted: #A7A1CC; --edge: #0B0916;
+  --a: #FF8CC0; --a-fill: #FF6FAE; --a-soft: #3D1D33; --b: #6FD8F2; --b-fill: #2EC4E8; --b-soft: #14313D;
+  --pass: #5BE3A6; --pass-fill: #3DDC97; --pass-soft: #163327; --fail: #FF8A80; --fail-fill: #FF5A4E; --fail-soft: #3A1A1D; --warn: #FFD66B; --warn-soft: #3A3017;
+  color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body);
+  background-image: radial-gradient(1000px 520px at 6% -10%, var(--glow-a), transparent 62%), radial-gradient(1000px 520px at 94% -10%, var(--glow-b), transparent 62%); background-repeat: no-repeat; }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 22px 16px 40px; display: grid; gap: 16px; }
+.wrap > * { min-width: 0; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font: 800 40px/1 var(--f-display); letter-spacing: -.04em; background: linear-gradient(120deg, var(--a), var(--b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tag { font: 600 12px var(--f-body); color: var(--b); background: var(--b-soft); padding: 3px 10px; border-radius: 999px; }
+.brand p { margin: 0; color: var(--muted); font-size: 14px; flex-basis: 100%; max-width: 80ch; }
+.nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 13.5px var(--f-body); padding: 8px 16px; border-radius: 999px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: linear-gradient(120deg, var(--a), var(--b)); color: var(--on-accent); border: 0; }
+.btn.small { padding: 5px 12px; font-size: 12.5px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--b); outline-offset: 2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-l); box-shadow: var(--shadow); padding: 16px 18px; display: grid; gap: 12px; min-width: 0; }
+.card > * { min-width: 0; }
+.card h2 { margin: 0; font: 700 18px var(--f-display); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.card h2 .chip { font-family: var(--f-body); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+label.f { display: grid; gap: 4px; font-size: 13px; font-weight: 600; min-width: 0; }
+input.t, select { font: 14px var(--f-body); padding: 8px 12px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--code); color: var(--ink); min-width: 0; }
+input.path { font-family: var(--f-mono); flex: 1 1 420px; }
+.grow { flex: 1 1 420px; display: grid; }
+.muted { color: var(--muted); font-size: 13px; }
+.note { color: var(--muted); font-size: 13.5px; margin: 0; max-width: 90ch; }
+.err { color: var(--fail); font-size: 13.5px; margin: 0; }
+.chip { font: 600 11.5px var(--f-body); padding: 3px 10px; border-radius: 999px; background: var(--code); color: var(--muted); white-space: nowrap; }
+.chip.pass { background: var(--pass-soft); color: var(--pass); } .chip.fail { background: var(--fail-soft); color: var(--fail); } .chip.busy { background: var(--warn-soft); color: var(--warn); }
+.chip.A { background: var(--a-soft); color: var(--a); } .chip.B { background: var(--b-soft); color: var(--b); } .chip.both { background: linear-gradient(90deg, var(--a-soft), var(--b-soft)); color: var(--ink); }
+.facts { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 13.5px; }
+.facts code { font: 12.5px var(--f-mono); background: var(--code); padding: 2px 6px; border-radius: var(--r-s); overflow-wrap: anywhere; }
+.status { display: flex; gap: 10px; align-items: center; font-size: 14px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); flex: none; }
+.dot.ok { background: var(--pass); } .dot.bad { background: var(--fail); } .dot.busy { background: var(--warn); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.stat { padding: 12px 14px; border-radius: var(--r-m); background: var(--code); display: grid; gap: 2px; }
+.stat b { font: 700 24px var(--f-display); }
+.stat span { font-size: 13px; color: var(--muted); }
+.stat.good b { color: var(--pass); } .stat.bad b { color: var(--fail); }
+.devs { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.dev { padding: 12px 14px; border-radius: var(--r-m); background: var(--dev-soft); border-left: 4px solid var(--dev); display: grid; gap: 4px; }
+.dev h3 { margin: 0; font: 700 16px var(--f-display); color: var(--dev); }
+.dev .r { font-size: 13.5px; }
+.files { display: grid; gap: 6px; }
+.file { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 9px 12px; border-radius: var(--r-m); background: var(--code); align-items: center; }
+.file .p { font: 500 13px var(--f-mono); overflow-wrap: anywhere; }
+.file .c { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); }
+.file .c b { font-weight: 600; }
+.conf { padding: 12px 14px; border-radius: var(--r-m); background: var(--code); border-left: 3px solid var(--warn); display: grid; gap: 8px; }
+.conf.done { border-left-color: var(--pass); }
+.conf h4 { margin: 0; font: 600 14px var(--f-body); overflow-wrap: anywhere; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.side .k { font: 600 11.5px var(--f-body); color: var(--dev); }
+pre { margin: 0; font: 12px/1.5 var(--f-mono); background: var(--surface); border-radius: var(--r-m); padding: 8px 10px; overflow: auto; white-space: pre; max-height: 260px; }
+.side pre { border-top: 3px solid var(--dev); }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tests { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .tests { grid-template-columns: minmax(0, 1fr); } }
+.tcol { padding: 12px 14px; border-radius: var(--r-m); background: var(--code); display: grid; gap: 6px; align-content: start; min-width: 0; }
+.tcol h4 { margin: 0; font: 600 13.5px var(--f-body); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.t { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 6px; font-size: 13px; line-height: 1.35; }
+.t .mk { font: 600 13px var(--f-mono); text-align: center; }
+.t.ok .mk { color: var(--pass); } .t.bad, .t.bad .mk { color: var(--fail); }
+.t small { display: block; color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.bugs { display: grid; gap: 10px; }
+.bug { padding: 12px 16px; border-radius: var(--r-m); background: var(--code); display: grid; gap: 6px; border-left: 4px solid var(--fail); }
+.bug.fixed { border-left-color: var(--pass); opacity: .8; }
+.bug-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.bug-head h4 { margin: 0; font: 700 15px var(--f-display); flex: 1 1 300px; overflow-wrap: anywhere; }
+.bug p { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.bug .k { font: 600 11.5px var(--f-body); color: var(--muted); display: block; }
+.changed-lines { margin: 6px 0; } .chg { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0; font-size: 13.5px; } .chg code { background: rgba(127,127,127,.14); padding: 2px 6px; border-radius: var(--r-s); } .chg code.was { text-decoration: line-through; opacity: .65; }
+.plain-list { display: grid; gap: 10px; margin-top: 4px; }
+.plain-item { padding: 12px 16px; border-radius: var(--r-m); background: var(--code); display: grid; gap: 6px; border-left: 4px solid var(--line); }
+.plain-item.ready { border-left-color: var(--pass); } .plain-item.error, .plain-item.fails-start { border-left-color: var(--fail); } .plain-item.writing, .plain-item.checking { border-left-color: var(--warn); }
+.plain-item h4 { margin: 0; font: 600 15px var(--f-body); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.plain-item pre { margin: 6px 0 0; padding: 10px 12px; border-radius: var(--r-m); background: var(--bg); font: 12px/1.5 var(--f-mono); overflow: auto; max-height: 320px; }
+.plain-ed { display: grid; gap: 8px; } .plain-ed textarea.code { min-height: 200px; }
+.hint { background: var(--warn-soft); color: var(--ink); padding: 6px 10px; border-radius: var(--r-m); font-size: 13.5px; }
+.editor { display: grid; gap: 8px; }
+textarea.code { width: 100%; min-height: 340px; max-height: 70vh; resize: vertical; font: 12.5px/1.6 var(--f-mono); padding: 10px 12px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--code); color: var(--ink); white-space: pre; overflow: auto; tab-size: 4; }
+.authors { margin: 0; padding: 8px 0; font: 12px/1.6 var(--f-mono); max-height: 360px; overflow: auto; background: var(--code); border-radius: var(--r-m); }
+.authors .ln { display: block; padding: 0 12px; white-space: pre; border-left: 3px solid transparent; }
+.authors .ln.A { background: var(--a-soft); border-left-color: var(--a); } .authors .ln.B { background: var(--b-soft); border-left-color: var(--b); } .authors .ln.both { background: var(--pass-soft); border-left-color: var(--pass); }
+.authors .ln.hit { outline: 2px solid var(--fail); outline-offset: -2px; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: var(--r-s); margin-right: 5px; vertical-align: -1px; }
+.saved { padding: 10px 14px; border-radius: var(--r-m); background: var(--pass-soft); font-size: 14px; display: grid; gap: 4px; }
+.saved code { font: 12.5px var(--f-mono); overflow-wrap: anywhere; }
+.log { margin: 0; padding: 10px 12px; font: 12.5px/1.55 var(--f-mono); background: var(--code); border-radius: var(--r-m); max-height: 240px; overflow: auto; display: grid; gap: 2px; }
+.log div { overflow-wrap: anywhere; } .log .ok { color: var(--pass); } .log .err { color: var(--fail); } .log .warn { color: var(--warn); }
+details summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 600 14px var(--f-body); padding: 7px 16px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.keybar { display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; font-size: 14px; padding: 10px 14px; }
+.keybar input { flex: 1 1 240px; min-width: 0; font: 13.5px var(--f-mono); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--code); color: var(--ink); }
+.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .three { grid-template-columns: minmax(0, 1fr); } }
+.three textarea { width: 100%; min-height: 260px; resize: vertical; font: 12.5px/1.55 var(--f-mono); padding: 10px 12px; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--code); color: var(--ink); white-space: pre; overflow: auto; }
+.three .col { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.three .col h4 { margin: 0; font: 600 13px var(--f-body); display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.three .col h4 span { color: var(--dev, var(--ink)); }
+.loadbtn { font: 600 12px var(--f-body); color: var(--muted); cursor: pointer; }
+.loadbtn input { display: none; }
+pre.out { max-height: 420px; background: var(--code); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--bg); font: 700 14px var(--f-display, sans-serif); margin-right: 10px; vertical-align: 2px; }
+.sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.chip.dev { background: var(--dev-soft); color: var(--dev); }
+.authors .ln.dev { background: var(--dev-soft); border-left-color: var(--dev); }
+.addcol { border: 2px dashed var(--line); border-radius: var(--r-m); display: grid; place-items: center; min-height: 120px; background: none; color: var(--muted); font: 600 14px var(--f-body); cursor: pointer; }
+.addcol:hover { border-color: var(--ink); color: var(--ink); }
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.board .dev .st { font-size: 13px; font-weight: 600; }
+.board .dev.waiting, .board .dev.conflict { opacity: .92; border-left-style: dashed; }
+.clash { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+
+.sidecol { border: 1px solid var(--line); border-radius: var(--r-m); padding: 12px; display: grid; gap: 8px; align-content: start; min-width: 0; border-top: 4px solid var(--dev, var(--line)); }
+.sidecol .hd { display: flex; gap: 8px; align-items: center; }
+.sidecol .hd input { flex: 1; min-width: 0; font: 700 15px var(--f-display, sans-serif); border: 1px solid transparent; background: transparent; color: inherit; padding: 2px 4px; border-radius: var(--r-s); }
+.sidecol .hd input:hover, .sidecol .hd input:focus { border-color: var(--line); }
+.sidecol .hd b { font: 700 15px var(--f-display, sans-serif); flex: 1; }
+.flist { display: grid; gap: 2px; max-height: 240px; overflow: auto; font: 13px var(--f-mono, monospace); }
+.flist div { display: flex; gap: 6px; align-items: center; padding: 2px 4px; border-radius: var(--r-s); }
+.flist div:hover { background: var(--dev-soft, rgba(0,0,0,.05)); }
+.flist .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.flist .sz { color: var(--muted); font-size: 11px; }
+.flist button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 4px; }
+.flist .empty { color: var(--muted); font-family: inherit; }
+.sidecol .acts { gap: 6px; }
+.sidecol .tog { font-size: 13px; display: flex; gap: 6px; align-items: start; }
+.sidecol details summary { font-size: 13px; cursor: pointer; color: var(--muted); }
+.sidecol details .row { margin-top: 6px; }
+.go { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.btn.big { font-size: 16px; padding: 12px 22px; }
+dialog { border: 1px solid var(--line); border-radius: var(--r-m); padding: 0; width: min(900px, calc(100vw - 32px)); background: var(--surface); color: inherit; }
+dialog::backdrop { background: rgba(0,0,0,.4); }
+.dlg { display: grid; gap: 10px; padding: 18px; }
+.dlg h3 { margin: 0; font: 700 18px var(--f-display, sans-serif); }
+.dlg textarea.code { min-height: 50vh; }
+.timeline { display: grid; gap: 4px; max-height: 260px; overflow: auto; font-size: 14px; }
+.timeline div { padding-left: 14px; position: relative; }
+.timeline div::before { content: ''; position: absolute; left: 2px; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.timeline .ok::before { background: var(--pass); }
+.timeline .bad::before, .timeline .err::before { background: var(--fail); }
+.final { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.banner { padding: 12px 14px; border-radius: var(--r-m); background: var(--pass-soft, rgba(0,160,80,.1)); font-weight: 600; }
+.banner.bad { background: var(--fail-soft, rgba(220,40,40,.1)); }
+.drop { outline: 2px dashed var(--dev, var(--ink)); outline-offset: -4px; }
+
+/* ---- Arcade layer ---- */
+header { flex-wrap: nowrap; align-items: center; } .brand { flex: 1 1 auto; min-width: 0; } .brand p { max-width: 64ch; } .nav { flex: none; align-items: center; }
+@media (max-width: 980px) { header { flex-wrap: wrap; } }
+body { background: var(--bg); background-image: none; }
+.brand h1 { font: 800 30px/1 var(--f-display); letter-spacing: -.02em; background: none; color: var(--ink); -webkit-text-fill-color: currentColor; display: flex; align-items: center; gap: 12px; }
+.brand h1::before { content: "⇄"; display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: var(--r-m); background: var(--sun); color: #17142B; border: var(--bw) solid var(--edge); box-shadow: var(--pop-s); font: 800 20px var(--f-body); }
+.card { border: var(--bw) solid var(--edge); border-radius: var(--r-l); box-shadow: var(--pop); padding: 18px 20px; }
+.card h2 { font: 800 19px var(--f-display); letter-spacing: -.01em; }
+.num { background: var(--sun); color: #17142B; border: var(--bw) solid var(--edge); width: 30px; height: 30px; font: 800 14px var(--f-display); }
+.btn { border: var(--bw) solid var(--edge); border-radius: var(--r-m); box-shadow: var(--pop-s); font: 600 14px var(--f-body); padding: 8px 15px; transition: transform .08s, box-shadow .08s; }
+.btn:not(:disabled):hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--edge); }
+.btn:not(:disabled):active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--edge); }
+.btn.primary { background: var(--a-fill); color: #17142B; border: var(--bw) solid var(--edge); }
+.btn.small { padding: 5px 11px; font-size: 13px; box-shadow: 2px 2px 0 var(--edge); }
+.btn.big { font: 700 17px var(--f-body); padding: 12px 24px; }
+input.t, select, .keybar input { border: 2px solid var(--edge); border-radius: var(--r-m); background: var(--surface); }
+.seg { border: var(--bw) solid var(--edge); border-radius: var(--r-m); padding: 0; overflow: hidden; background: var(--surface); box-shadow: var(--pop-s); }
+.seg button { border-radius: 0; padding: 8px 16px; }
+.seg button + button { border-left: 2px solid var(--edge); }
+.seg button[aria-selected="true"], .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.chip { border: 2px solid var(--edge); background: var(--surface); color: var(--ink); font: 600 12px var(--f-body); padding: 3px 10px; }
+.chip.pass { background: var(--pass-fill); color: #17142B; } .chip.fail { background: var(--fail-fill); color: #fff; } .chip.busy { background: var(--sun); color: #17142B; }
+.chip.A { background: var(--a-fill); color: #17142B; } .chip.B { background: var(--b-fill); color: #17142B; } .chip.both { background: linear-gradient(90deg, var(--a-fill) 50%, var(--b-fill) 50%); color: #17142B; }
+.chip.dev { background: var(--dev-fill, var(--dev-soft)); color: #17142B; }
+.banner { border: var(--bw) solid var(--edge); border-radius: var(--r-l); background: var(--pass-fill); color: #17142B; box-shadow: var(--pop-s); padding: 14px 16px; }
+.banner.bad { background: var(--fail-fill); color: #fff; }
+.hint { background: var(--warn-soft); border: 2px dashed var(--edge); border-radius: var(--r-m); padding: 10px 12px; }
+/* bugs: the one place that gets a sticker */
+.bug { background: var(--surface); border: var(--bw) solid var(--edge); border-radius: var(--r-l); box-shadow: var(--pop-s); padding: 16px 18px; position: relative; }
+.bug.open.clashy::after { content: "Clash!"; position: absolute; top: -15px; right: 22px; transform: rotate(4deg); background: var(--fail-fill); color: #fff; font: 800 13px var(--f-display); padding: 5px 12px; border: var(--bw) solid var(--edge); border-radius: var(--r-m); box-shadow: 2px 2px 0 var(--edge); }
+.bug.fixed { opacity: 1; background: var(--code); box-shadow: none; border-width: 2px; border-style: dashed; }
+.bug-head h4 { font: 800 16px/1.25 var(--f-display); }
+.plain-item { background: var(--surface); border: 2px solid var(--edge); border-radius: var(--r-l); }
+.plain-item.ready { box-shadow: 3px 3px 0 var(--pass-fill); } .plain-item.error, .plain-item.fails-start { box-shadow: 3px 3px 0 var(--fail-fill); } .plain-item.writing, .plain-item.checking { box-shadow: 3px 3px 0 var(--sun); }
+.sidecol > * { min-width: 0; } .flist div { min-width: 0; } .flist .sz { flex: none; } .flist .n { min-width: 0; } .sidecol .hd { min-width: 0; } .sidecol .hd .btn { box-shadow: none; padding: 2px 9px; }
+.sidecol { border: var(--bw) solid var(--edge); border-radius: var(--r-l); border-top: 8px solid var(--dev-fill, var(--dev, var(--edge))); background: var(--surface); }
+.dev { background: var(--surface); border: 2px solid var(--edge); border-left: 8px solid var(--dev-fill, var(--dev)); border-radius: var(--r-m); }
+.conf { background: var(--surface); border: 2px solid var(--edge); border-left: 8px solid var(--sun); border-radius: var(--r-m); }
+.conf.done { border-left-color: var(--pass-fill); }
+/* calm areas: reading and editing code */
+pre, textarea.code, .authors, .log, .file, .tcol, .flist, .stat { border-radius: var(--r-m); }
+textarea.code, .authors { border: 1.5px solid var(--line); background: var(--code); }
+.tcol { background: var(--code); border: 1.5px solid var(--line); }
+/* the score: who teamed up, and how it went */
+.score-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; }
+.team { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.who { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.face { font-style: normal; width: 52px; height: 52px; border-radius: 50%; border: var(--bw) solid var(--edge); display: grid; place-items: center; font: 800 21px var(--f-display); color: #17142B; background: var(--dev-fill, var(--dev)); box-shadow: var(--pop-s); flex: none; }
+.who b { display: block; font: 700 16px var(--f-display); letter-spacing: -.01em; }
+.who span { font-size: 12.5px; color: var(--muted); }
+.op { font: 800 26px var(--f-display); color: var(--ink); }
+.score { min-width: 210px; background: var(--sun); color: #17142B; border: var(--bw) solid var(--edge); border-radius: var(--r-l); padding: 12px 16px; box-shadow: var(--pop-s); }
+.score.good { background: var(--pass-fill); } .score.bad { background: var(--fail-fill); color: #fff; } .score.wait { background: var(--surface); color: var(--ink); }
+.score b { display: block; font: 800 32px/1.05 var(--f-display); letter-spacing: -.02em; }
+.score span { font-size: 13px; }
+.meter { height: 14px; border: var(--bw) solid var(--edge); border-radius: var(--r-s); background: #fff; overflow: hidden; margin-top: 8px; }
+.score.good .meter i { background: var(--sun); }
+.meter i { display: block; height: 100%; background: var(--pass-fill); border-right: var(--bw) solid var(--edge); transition: width .6s cubic-bezier(.2, .9, .3, 1.2); }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; }
+.steps .chip { font-size: 13px; padding: 6px 12px; }
+@media (max-width: 760px) { .score-card { grid-template-columns: minmax(0, 1fr); } .score { min-width: 0; } }
+/* 9 of 9: a short celebration, once */
+.party { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.party i { position: absolute; top: -20px; width: 12px; height: 16px; border: 2px solid var(--edge); border-radius: var(--r-s); animation: fall 1.6s cubic-bezier(.3, .6, .4, 1) forwards; }
+@keyframes fall { to { transform: translate(var(--dx), 105vh) rotate(var(--r)); } }
+@media (prefers-reduced-motion: reduce) { .party { display: none; } .btn, .meter i { transition: none; } }
+
+/* ---- Settings ---- */
+.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.set-row { display: grid; gap: 6px; padding: 10px 0; border-top: 1.5px dashed var(--line); } .set-row:first-of-type { border-top: 0; }
+.set-row > b { font-weight: 650; } .set-row .note { font-size: 13px; }
+.tg { display: flex; gap: 10px; align-items: center; font-weight: 600; cursor: pointer; }
+.tg input { width: 20px; height: 20px; accent-color: var(--a-fill); }
+.people { display: grid; gap: 6px; } .person { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 0; }
+.person .face { width: 32px; height: 32px; font-size: 13px; box-shadow: none; }
+.person .nm { flex: 1 1 160px; min-width: 0; } .person .nm small { display: block; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.form { display: grid; gap: 8px; } .form .row { align-items: center; }
+.path-t { font: 12.5px var(--f-mono); overflow-wrap: anywhere; background: var(--code); padding: 4px 8px; border-radius: var(--r-s); }
+#meChip .chip { font-size: 12.5px; padding: 5px 10px; }
+/* ---- teams rail (like Discord's server list) ---- */
+.rail { position: fixed; left: 0; top: 0; bottom: 0; width: 76px; padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--surface); border-right: var(--bw) solid var(--edge); z-index: 20; overflow-y: auto; }
+body.has-rail .wrap { padding-left: 92px; }
+.rail-i { width: 48px; height: 48px; flex: none; border-radius: var(--r-l); display: grid; place-items: center; font: 800 18px var(--f-display); color: #17142B; background: var(--c, var(--sun)); border: var(--bw) solid var(--edge); text-decoration: none; cursor: pointer; transition: border-radius .15s, transform .08s; }
+.rail-i:hover { border-radius: var(--r-m); transform: translate(-1px, -1px); }
+.rail-i.on { box-shadow: var(--pop-s); border-radius: var(--r-m); outline: 3px solid var(--ink); outline-offset: 3px; }
+.rail-i.add { background: var(--surface); color: var(--ink); font-size: 24px; border-style: dashed; }
+.tag#teamName:empty { display: none; }
+@media (max-width: 760px) { .rail { position: sticky; flex-direction: row; width: auto; height: auto; bottom: auto; padding: 8px 12px; border-right: 0; border-bottom: var(--bw) solid var(--edge); overflow-x: auto; } body.has-rail .wrap { padding-left: 16px; } }
+/* ---- Calm: the same page without the stickers, for teams that want it quiet ---- */
+:root[data-style="calm"] { --bw: 1px; --pop: none; --pop-s: none; --f-display: "Lexend", "Segoe UI", system-ui, sans-serif; --edge: var(--line); }
+:root[data-style="calm"] .card { border-color: var(--line); box-shadow: 0 1px 2px rgba(23,20,43,.06); }
+:root[data-style="calm"] .btn { box-shadow: none; } :root[data-style="calm"] .btn:not(:disabled):hover, :root[data-style="calm"] .btn:not(:disabled):active { transform: none; box-shadow: none; }
+:root[data-style="calm"] .bug.open.clashy::after { display: none; }
+:root[data-style="calm"] .brand h1::before, :root[data-style="calm"] .face, :root[data-style="calm"] .score, :root[data-style="calm"] .banner, :root[data-style="calm"] .num { box-shadow: none; }
+:root[data-style="calm"] .card h2, :root[data-style="calm"] .bug-head h4, :root[data-style="calm"] .who b, :root[data-style="calm"] .score b { letter-spacing: -.01em; font-weight: 650; }
+:root[data-style="calm"] .chip { border-width: 1px; }
+:root[data-style="calm"] .meter { border-width: 1px; } :root[data-style="calm"] .meter i { border-right: 0; }
+:root[data-style="calm"] .plain-item.ready, :root[data-style="calm"] .plain-item.error, :root[data-style="calm"] .plain-item.fails-start, :root[data-style="calm"] .plain-item.writing, :root[data-style="calm"] .plain-item.checking { box-shadow: none; }
+.keyalt{display:inline-flex;gap:6px;align-items:center}.keyalt summary{cursor:pointer;color:var(--muted,#888);font-size:.9em}.keyalt[open]{display:inline-flex}
+
+/* bring the code from git: two clear steps */
+.gstep { display: grid; gap: 10px; margin-top: 6px; }
+.gstep + .gstep, #info + .gstep { margin-top: 22px; }
+.gtitle { margin: 0; display: flex; align-items: center; gap: 10px; font: 700 16px var(--f-display); }
+.gnum { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: var(--bw, 2px) solid var(--edge, currentColor); background: var(--sun, #FFD23F); color: #17142B; font: 800 13px var(--f-display); flex: none; }
+.gstep > .note { margin: 0; }
+.gpick { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch; }
+.gbox { display: grid; gap: 4px; align-content: start; padding: 14px; border: 1.5px solid var(--line, rgba(127,127,127,.3)); border-radius: var(--r-m); background: var(--code); }
+.gbox > b { font-size: 14px; } .gbox > .note { margin: 0 0 6px; }
+.gin { display: flex; gap: 8px; align-items: center; min-width: 0; } .gin .t { flex: 1; min-width: 0; } .gin .btn { flex: none; }
+.gor { display: grid; place-items: center; } .gor span { font-weight: 700; font-size: 13px; opacity: .7; padding: 6px 8px; border-radius: var(--r-pill); border: 1.5px solid var(--line, rgba(127,127,127,.3)); }
+.gproj { margin-top: 18px; padding: 14px 16px; border-radius: var(--r-m); border-left: 5px solid var(--b-fill); background: var(--b-soft); display: grid; gap: 10px; }
+.gproj-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .gproj-h b { font-size: 15px; overflow-wrap: anywhere; }
+.gfacts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 13.5px; align-items: center; }
+.gfacts dt { font-weight: 700; opacity: .8; } .gfacts dd { margin: 0; min-width: 0; }
+.gfacts code { font: 12.5px var(--f-mono); background: var(--code); padding: 2px 6px; border-radius: var(--r-s); overflow-wrap: anywhere; }
+.gbranches { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.gdev > span { display: flex; align-items: center; gap: 8px; } .gdev select { width: 100%; }
+.gdev .tag { display: inline-flex; align-items: center; justify-content: center; line-height: 1; padding: 0; text-indent: 0; flex: none; box-sizing: border-box; width: 22px; height: 22px; border-radius: var(--r-s); font: 800 12px var(--f-display); font-style: normal; color: #17142B; background: var(--sun, #FFD23F); border: 1.5px solid var(--edge, currentColor); }
+.gdev .tag.ta { background: var(--a-fill); } .gdev .tag.tb { background: var(--b-fill); }
+.gmore { display: flex; gap: 8px; flex-wrap: wrap; }
+.gfork { border-top: 1px dashed var(--line, rgba(127,127,127,.3)); padding-top: 10px; display: grid; gap: 8px; }
+.gfork summary { cursor: pointer; font-weight: 600; font-size: 13.5px; } .gfork .note { margin: 6px 0; }
+@media (max-width: 760px) { .gpick { grid-template-columns: 1fr; } .gor { padding: 0; } .gin { flex-wrap: wrap; } .gfacts { grid-template-columns: 1fr; } .gfacts dt { margin-top: 4px; } }
+
+/* pull requests */
+.prbar { display: grid; gap: 8px; padding: 12px 14px; }
+.prbar-h { display: flex; gap: 6px 12px; flex-wrap: wrap; align-items: baseline; }
+.prlist { display: grid; gap: 8px; }
+.pr { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: var(--r-m); background: var(--code); border-left: 4px solid var(--line); }
+.pr-safe { border-left-color: var(--pass-fill); } .pr-breaks { border-left-color: var(--fail-fill); } .pr-checking { border-left-color: var(--sun); }
+.pr-ic { flex: none; font-size: 16px; line-height: 1.3; }
+.pr-t { display: grid; gap: 2px; min-width: 0; } .pr-t a { font-weight: 700; color: inherit; overflow-wrap: anywhere; } .pr-t small { color: var(--muted); overflow-wrap: anywhere; } .pr-t small.pr-p { color: var(--ink); }
+ol.steps { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+
+/* ==== one system (tasteskill rules applied to the app): corner scale, motion timings, hover/press/focus on every control ==== */
+:root { --r-s: 8px; --r-m: 12px; --r-l: 20px; --r-pill: 999px;
+  --m-in: 140ms; --m-out: 200ms; --m-press: 90ms; --m-ease: cubic-bezier(.2, .8, .2, 1); }
+/* buttons: step up on hover, sink on press (Arcade's offset shadow follows) */
+.btn { transition: transform var(--m-out) var(--m-ease), box-shadow var(--m-out) var(--m-ease), background-color var(--m-out) var(--m-ease), outline-offset var(--m-out) var(--m-ease), outline-color var(--m-out) var(--m-ease); }
+.btn:not(:disabled):hover { transition-duration: var(--m-in); }
+.btn:not(:disabled):active { transition-duration: var(--m-press); }
+.btn:not(.primary):not(:disabled):hover { background-color: color-mix(in srgb, var(--surface) 86%, var(--ink)); }
+.btn.primary:not(:disabled):hover { background-color: color-mix(in srgb, var(--a-fill) 86%, var(--ink)); }
+/* tabs and switches: the unselected ones answer the pointer */
+.seg button { transition: background-color var(--m-out) var(--m-ease), color var(--m-out) var(--m-ease); }
+.seg button:not([aria-selected="true"]):not([aria-pressed="true"]):hover { background: color-mix(in srgb, var(--surface) 88%, var(--ink)); color: var(--ink); transition-duration: var(--m-in); }
+.seg button:active { transform: scale(.985); }
+/* links: a faint hairline, an ink line draws on hover */
+a:not(.btn):not(.rail-i) { color: inherit; text-decoration: underline 1px color-mix(in srgb, currentColor 30%, transparent); text-underline-offset: 3px; transition: text-decoration-color var(--m-out) var(--m-ease); }
+a:not(.btn):not(.rail-i):hover { text-decoration-color: currentColor; transition-duration: var(--m-in); }
+/* fields: a stronger border on hover, the accent border and a soft ring while typing */
+input.t, select, textarea, .keybar input, .sidecol .hd input { transition: border-color var(--m-out) var(--m-ease), box-shadow var(--m-out) var(--m-ease); }
+input.t:hover, select:hover, textarea:hover, .keybar input:hover { border-color: color-mix(in srgb, var(--line) 40%, var(--ink)); }
+input.t:focus, select:focus, textarea:focus, .keybar input:focus { border-color: var(--b); box-shadow: 0 0 0 3px color-mix(in srgb, var(--b) 28%, transparent); outline: none; }
+/* keyboard focus: a 2px ring that settles from 6px to 2px */
+button, a, summary, [tabindex] { outline: 2px solid transparent; outline-offset: 6px; }
+button:focus-visible, a:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline-color: var(--b); outline-offset: 2px; transition: outline-offset var(--m-out) var(--m-ease), outline-color var(--m-out) var(--m-ease); }
+/* checkboxes in the page's colour; clickable rows show they are */
+input[type="checkbox"], input[type="radio"] { accent-color: var(--a-fill); }
+summary { cursor: pointer; }
+.pr { transition: transform var(--m-out) var(--m-ease), box-shadow var(--m-out) var(--m-ease); }
+.pr:hover { transform: translateY(-2px); box-shadow: 0 10px 24px color-mix(in srgb, var(--ink) 10%, transparent); transition-duration: var(--m-in); }
+/* real icons (the tools' own logos, CC0 from gilbarbara/logos) */
+.ic { width: 16px; height: 16px; flex: none; vertical-align: -3px; display: inline-block; background: center / contain no-repeat; font-style: normal; }
+.ic.lg { width: 20px; height: 20px; vertical-align: -4px; }
+.chip .ic { width: 14px; height: 14px; margin-right: 5px; vertical-align: -2px; }
+:root[data-theme="dark"] .ic.ink { filter: invert(1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ic.ink { filter: invert(1); } }
+/* switches are as wide as their buttons, never with an empty slot */
+.seg { width: fit-content; max-width: 100%; justify-self: start; align-self: start; }
+/* the header: who is signed in, as text with a face, then same-size buttons */
+#meChip { display: inline-flex; align-items: center; gap: 10px; }
+.me { display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--f-body); color: var(--ink); max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-face { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--b-fill); color: #17142B; border: var(--bw) solid var(--edge); font: 800 13px var(--f-display); font-style: normal; }
+/* the AI bar: icon and text on one line, the text takes the room */
+.keybar > span:not(.err) { flex: 1 1 220px; min-width: 0; }
+.ic.off { filter: grayscale(1); opacity: .5; }
+:root[data-theme="dark"] .ic.off { opacity: .6; }
+/* narrow screens: the top bar wraps instead of pushing the page sideways */
+@media (max-width: 980px) { header .nav { flex: 1 1 100%; flex-wrap: wrap; } }
+.keybar { flex-wrap: wrap; } .keyalt { flex-wrap: wrap; max-width: 100%; } .keyalt input { flex: 1 1 180px; min-width: 0; width: auto; }
+@media (max-width: 520px) { .seg { max-width: 100%; } .seg button { flex: 1 1 auto; } }
+@media (prefers-reduced-motion: reduce) { .btn, .seg button, a, input, select, textarea, .pr, button:focus-visible { transition: none !important; } .pr:hover, .seg button:active { transform: none; } }
+</style>
+<script>
+// the look from last time, before anything is drawn; the server's settings follow a moment later
+try { const l = JSON.parse(localStorage.getItem('tandemi-look') || '{}'); if (l.theme && l.theme !== 'system') document.documentElement.dataset.theme = l.theme; if (l.style) document.documentElement.dataset.style = l.style; } catch (e) { /* default look */ }
+</script>
+</head>
+<body>
+<nav id="rail" class="rail" aria-label="Your teams" hidden></nav>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Tandemi</h1><span class="tag" id="teamName"></span>
+      <p>Two developers or a whole team, one codebase. Tandemi merges their work by the code's structure, finds the conflicts git can't see, sends every bug to whoever caused it, lets their AI agent fix it, and hands you the final code.</p>
+    </div>
+    <div class="nav">
+      <span id="meChip"></span>
+      <button class="btn" id="setBtn" aria-controls="settings" aria-expanded="false">Settings</button>
+      <button class="btn" id="startOver" title="Close the project and clear the page. Pasted code is thrown away; a git project keeps its plain-word tests.">Start over</button>
+      <div class="seg" role="group" aria-label="Who fixes the bugs"><button id="mAuto" aria-pressed="true">Agents fix it</button><button id="mReport" aria-pressed="false">Just report</button></div>
+    </div>
+  </header>
+  <div class="card keybar" id="keybar" aria-live="polite"></div>
+  <div class="card prbar" id="prbar" hidden aria-live="polite"></div>
+  <div id="settings" hidden></div>
+
+  <!-- 1 · bring the code -->
+  <section class="card" aria-labelledby="h1">
+    <h2 id="h1"><span class="num">1</span>Bring the code</h2>
+    <div class="row" style="justify-content:space-between">
+      <div class="seg" role="tablist" aria-label="Where the code is">
+        <button role="tab" data-src="code" aria-selected="true">Paste, files or folders</button>
+        <button role="tab" data-src="git" aria-selected="false">Git project or GitHub</button>
+        <button role="tab" data-src="example" aria-selected="false">Example</button>
+      </div>
+    </div>
+
+    <div data-pane="code">
+      <p class="note">For each developer, add their version: paste code, upload files or a whole folder, or point to a folder on this computer. The original (what both started from) is optional but makes the merge much better.</p>
+      <div class="row"><label class="f grow">Project name<input class="t" id="title" placeholder="My project" spellcheck="false"></label></div>
+      <div class="sides" id="sides"></div>
+    </div>
+
+    <div data-pane="git" style="display:none">
+      <div class="gstep">
+        <h3 class="gtitle"><span class="gnum">a</span>Where is the project?</h3>
+        <p class="note">One folder or one link is enough: Tandemi takes the <b>whole project</b>, all its files and all its branches, not just one page.</p>
+        <div class="gpick">
+          <div class="gbox">
+            <b>On this computer</b><span class="note">A project folder with a .git folder inside</span>
+            <div class="gin"><input class="t path" id="path" placeholder="C:\Users\you\source\repos\MyGame" spellcheck="false" aria-label="Project folder on this computer"><button class="btn primary" id="openBtn">Open</button></div>
+          </div>
+          <div class="gor"><span>or</span></div>
+          <div class="gbox">
+            <b>On GitHub</b><span class="note">The project's link, like https://github.com/owner/repo</span>
+            <div class="gin"><input class="t path" id="ghUrl" placeholder="https://github.com/owner/repo" spellcheck="false" aria-label="GitHub link"><button class="btn" id="ghBtn">Open from GitHub</button></div>
+          </div>
+        </div>
+      </div>
+      <div id="info" hidden></div>
+      <div class="gstep" id="branchRow" hidden>
+        <h3 class="gtitle"><span class="gnum">b</span>Whose work do you merge?</h3>
+        <p class="note">Each developer works on their own branch. Pick one branch per developer.</p>
+        <div class="gbranches">
+          <label class="f gdev"><span><i class="tag ta">A</i>Developer A's branch</span><select id="brA"></select></label>
+          <label class="f gdev"><span><i class="tag tb">B</i>Developer B's branch</span><select id="brB"></select></label>
+          <span id="moreBr" style="display:contents"></span>
+        </div>
+        <div class="gmore">
+          <button class="btn small" id="addBrBtn" title="Merge a whole team: three or more branches at once">+ Add another developer</button>
+          <button class="btn small" id="fetchBtn" title="git fetch: get branches pushed to GitHub">Get newly pushed branches</button>
+        </div>
+        <details class="gfork"><summary>A developer works in their own copy of the project (a fork)?</summary>
+          <p class="note">Paste the link of their copy. Their branches then show up in the lists above, named after them (like <code>ana/main</code>).</p>
+          <div class="gin"><input class="t path" id="forkUrl" placeholder="https://github.com/teammate/repo" spellcheck="false" aria-label="Link of a teammate's copy"><button class="btn small" id="forkBtn">Add their copy</button></div>
+          <span class="note" id="forkMsg"></span>
+        </details>
+      </div>
+    </div>
+
+    <div data-pane="example" style="display:none">
+      <p class="note">A small MonoGame-style C# game: two developers (Ana and Beka) on two branches, with tests. git can't merge them; Tandemi can, then finds a bug git never sees.</p>
+      <div class="acts"><button class="btn primary" id="sampleBtn">Load the example game</button></div>
+    </div>
+
+    <p class="err" id="openErr"></p>
+    <div class="go"><button class="btn primary big" id="mergeBtn">Merge and test</button><div class="status" role="status" aria-live="polite"><span class="dot" id="dot"></span><span id="step"></span></div></div>
+  </section>
+
+  <!-- tests in plain words -->
+  <div id="plain" hidden></div>
+
+  <!-- 2 · what happened -->
+  <div id="result" hidden style="display:grid;gap:16px"></div>
+</div>
+<dialog id="teamDlg" aria-labelledby="tdTitle">
+  <form method="dialog" class="dlg">
+    <h3 id="tdTitle">Create a team</h3>
+    <p class="note">A team has its own projects, merges, tests and API key. Invite people with a link.</p>
+    <div class="row"><input class="t grow" id="tdName" placeholder="Team name, like Cat Runner" maxlength="40"><button class="btn primary" id="tdCreate" type="button">Create</button></div>
+    <h3>…or join one</h3>
+    <div class="row"><input class="t grow" id="tdCode" placeholder="Paste the invite link" spellcheck="false"><button class="btn" id="tdJoin" type="button">Join</button></div>
+    <p class="err" id="tdErr" role="alert"></p>
+    <div class="acts"><button class="btn" value="cancel" formnovalidate>Close</button></div>
+  </form>
+</dialog>
+<dialog id="pasteDlg" aria-labelledby="pasteTitle">
+  <form method="dialog" class="dlg">
+    <h3 id="pasteTitle">Paste a file</h3>
+    <label class="f">File name (with its folder if it has one)<input class="t" id="pName" placeholder="src/Player.cs" spellcheck="false" required></label>
+    <label class="f">Code<textarea class="code" id="pText" spellcheck="false"></textarea></label>
+    <p class="err" id="pErr"></p>
+    <div class="acts"><button class="btn primary" id="pAdd" value="add">Add file</button><button class="btn" value="cancel" formnovalidate>Cancel</button></div>
+  </form>
+</dialog>
+<input type="file" id="upFiles" multiple hidden>
+<input type="file" id="upFolder" webkitdirectory directory multiple hidden>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) }).then(r => r.json().catch(() => ({})).then(d => { if (r.status === 401 && d.signIn) { location.href = '/login'; } return r.ok ? d : { error: d.error || 'Something went wrong.' }; })).catch(() => ({ error: 'Tandemi is not answering. Is its window still open?' }));
+const DEV = { A: 'style="--dev: var(--a); --dev-soft: var(--a-soft); --dev-fill: var(--a-fill)"', B: 'style="--dev: var(--b); --dev-soft: var(--b-soft); --dev-fill: var(--b-fill)"', base: '' };
+const FILL = ['#3DDC97', '#B794FF', '#FF9F45', '#A8E05F', '#5AA9FF', '#FFC93C', '#AEB8CC', '#FF7E5F', '#6EE7B7', '#D9A86C'];
+const MORE = ['#0E8A7A', '#8B47D6', '#C2387A', '#6E8A12', '#2F7FC1', '#B8860B', '#5B6B7F', '#D2552C', '#3E9E4F', '#7A5230'];
+'CDEFGHIJKL'.split('').forEach((k, i) => { DEV[k] = `style="--dev: ${MORE[i]}; --dev-soft: ${MORE[i]}26; --dev-fill: ${FILL[i]}"`; });
+// the score card: who teamed up (faces), and how the merge did (the score), with the steps as chips under it
+const initial = (n) => (String(n || '?').trim()[0] || '?').toUpperCase();
+function scoreHtml(people, run, checksOnly, busy) {
+  const faces = people.map((p, i) => `${i ? `<span class="op" aria-hidden="true">+</span>` : ''}<div class="who" ${DEV[p.key] || ''}><i class="face" aria-hidden="true">${esc(initial(p.name))}</i><div><b>${esc(p.name)}</b><span>${esc(p.sub || '')}</span></div></div>`).join('');
+  let cls = 'wait', big = busy ? 'Checking…' : 'Merged', small = busy ? 'building and testing the merge' : 'not checked yet', pct = null;
+  if (run && run.build && !run.build.ok) { cls = 'bad'; big = checksOnly ? "Doesn't compile" : "Doesn't build"; small = `${run.build.errors.length} error${run.build.errors.length === 1 ? '' : 's'} after the merge`; }
+  else if (run && run.ranTests) { const n = run.tests.filter(t => !t.skipped).length, ok = run.tests.filter(t => t.ok).length; cls = ok === n ? 'good' : ''; big = `${ok} / ${n}`; small = 'tests pass after the merge'; pct = n ? Math.round(100 * ok / n) : 0; }
+  else if (run) { cls = 'good'; big = checksOnly ? 'Compiles' : 'Builds'; small = 'after the merge'; }
+  return `<div class="score-card"><div class="team">${faces}<span class="op" aria-hidden="true">=</span></div>
+    <div class="score ${cls}" role="status"><b>${esc(big)}</b><span>${esc(small)}</span>${pct !== null ? `<div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>` : ''}</div></div>`;
+}
+// a short burst of confetti the moment everything passes (once per merge, not on every update)
+let partyFor = '';
+const wasOk = {};
+// only the moment it turns green (not when a page opens on a merge that already passed)
+function celebrate(k, ok) { if (ok && wasOk[k] === false) party(k + Date.now()); if (ok !== undefined) wasOk[k] = !!ok; }
+function party(key) {
+  if (partyFor === key || !look().celebrate || matchMedia('(prefers-reduced-motion: reduce)').matches) { partyFor = key; return; }
+  partyFor = key; const box = document.createElement('div'); box.className = 'party'; box.setAttribute('aria-hidden', 'true');
+  const colors = ['#FF6FAE', '#2EC4E8', '#FFD23F', '#3DDC97', '#B794FF'];
+  for (let i = 0; i < 70; i++) { const c = document.createElement('i'); c.style.left = Math.random() * 100 + 'vw'; c.style.background = colors[i % colors.length]; c.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px'); c.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg'); c.style.animationDelay = Math.random() * .35 + 's'; box.appendChild(c); }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 2400);
+}
+let T = { open: false }, teamKey = '';
+const teamOn = () => T.open && T.active && ((src === 'code') === (T.source === 'workspace'));
+const EP = () => (teamOn() ? 'api/team' : 'api/project');
+const tn = (k) => { const d = (T.devs || []).find(x => x.key === k); return d ? d.name : k; };
+const tchip = (k) => `<span class="chip dev" ${DEV[k] || ''}>${esc(tn(k))}</span>`;
+const tlist = (ks) => { const l = ks.map(tn); return l.length < 2 ? l.join('') : l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1]; };
+const SKIP = /(^|\/)(\.git|bin|obj|node_modules|\.vs|\.idea|__pycache__)(\/|$)/i;
+const size = (n) => (n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
+let P = { open: false }, WS = { exists: false }, AIK = { hasKey: false }, editor = { file: null, dirty: false }, renderedKey = '', src = 'code', busyUpload = '';
+// the tab is remembered per team; until someone picks one here, it follows what the team has open
+const SRC_KEY = 'tandemi-src-' + ((location.pathname.match(/^\/s\/([0-9a-f]{12})\//) || [])[1] || 'local');
+let srcChosen = false;
+try { const v = localStorage.getItem(SRC_KEY); if (v) { src = v; srcChosen = true; } } catch (e) { /* default */ }
+
+function who(s) { if (!P.devs) return s; return s === 'both' ? `${P.devs.A.name} + ${P.devs.B.name}` : P.devs[s] ? P.devs[s].name : s; }
+function ownerChip(s) { return `<span class="chip ${s}">${esc(who(s))}</span>`; }
+const isWS = () => P.open && P.source === 'workspace';
+const sideLabel = (s) => (isWS() ? `${who(s)}'s version` : P.devs ? `${P.devs[s].branch} (${who(s)})` : s);
+
+// ---------------------------------------------------------------- step 1: where the code is
+function setSrc(s, keep = true) {
+  src = s; if (keep) try { localStorage.setItem(SRC_KEY, s); } catch (e) { /* not remembered */ }
+  document.querySelectorAll('[data-src]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.src === s)));
+  document.querySelectorAll('[data-pane]').forEach(el => { el.style.display = el.dataset.pane === s ? '' : 'none'; });
+  $('openErr').textContent = '';
+  render();
+}
+document.querySelectorAll('[data-src]').forEach(b => { b.onclick = () => { srcChosen = true; setSrc(b.dataset.src); }; });
+
+const SIDE_TITLE = new Proxy({ base: 'Original' }, { get: (o, k) => o[k] || `Developer ${String(k)}` });
+function renderSides() {
+  const box = $('sides');
+  if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'text') return; // don't steal a name being typed
+  const names = WS.names || { A: 'Developer A', B: 'Developer B' };
+  const devKeys = WS.devs || ['A', 'B'];
+  box.innerHTML = ['base', ...devKeys].map(s => {
+    const S = (WS.sides && WS.sides[s]) || { files: [], count: 0, bytes: 0, whole: s === 'base' };
+    const head = s === 'base' ? `<b>Original</b><span class="chip">optional</span>` : `<input type="text" data-name="${s}" value="${esc(names[s] || SIDE_TITLE[s])}" aria-label="${SIDE_TITLE[s]}'s name" maxlength="40">${devKeys.length > 2 ? `<button class="btn small" data-drop="${s}" aria-label="Remove ${esc(names[s] || s)}" title="Remove this developer">×</button>` : ''}`;
+    const files = S.files.length ? S.files.map(f => `<div><span class="n" data-view="${esc(f.path)}" data-side="${s}" title="Show or change ${esc(f.path)}">${esc(f.path)}</span><span class="sz">${size(f.size)}</span><button data-rm="${esc(f.path)}" data-side="${s}" aria-label="Remove ${esc(f.path)}">×</button></div>`).join('') + (S.count > S.files.length ? `<div class="empty">… and ${S.count - S.files.length} more</div>` : '')
+      : `<div class="empty">${s === 'base' ? 'What both developers started from. Without it Tandemi can only compare A and B.' : 'No code yet. Paste it, upload it, or drop files here.'}</div>`;
+    return `<div class="sidecol" data-col="${s}" ${DEV[s]}>
+      <div class="hd">${head}</div>
+      <div class="muted" style="font-size:13px">${S.count ? `${S.count} file${S.count === 1 ? '' : 's'} · ${size(S.bytes)}` : ''}${busyUpload && busyUpload.startsWith(s + ':') ? ' · ' + esc(busyUpload.slice(s.length + 1)) : ''}</div>
+      <div class="flist">${files}</div>
+      <div class="acts"><button class="btn small" data-paste="${s}">Paste code</button><button class="btn small" data-up="${s}">Upload files</button><button class="btn small" data-upf="${s}">Upload folder</button>${S.count ? `<button class="btn small" data-clear="${s}">Clear</button>` : ''}</div>
+      ${s === 'base' ? '' : `<label class="tog"><input type="checkbox" data-whole="${s}"${S.whole ? ' checked' : ''}><span>This is the <b>whole project</b> (a file missing here was deleted). Unticked: only the files this developer changed, the rest comes from the original.</span></label>`}
+      <details><summary>A folder on this computer</summary><div class="row"><input class="t path grow" data-fpath="${s}" placeholder="C:\\Users\\you\\code\\${s === 'base' ? 'original' : 'version-' + s.toLowerCase()}" spellcheck="false"><button class="btn small" data-fgo="${s}">Use folder</button></div></details>
+    </div>`;
+  }).join('') + (devKeys.length < 12 ? `<button class="addcol" id="addDev">+ Add developer<br><span class="muted" style="font-weight:400;font-size:12.5px">merge a whole team at once</span></button>` : '');
+  box.querySelectorAll('[data-name]').forEach(i => { i.onchange = () => post('api/ws/names', { names: { [i.dataset.name]: i.value.trim() || SIDE_TITLE[i.dataset.name] } }); });
+  box.querySelectorAll('[data-drop]').forEach(b => { b.onclick = () => post('api/ws/remove_developer', { key: b.dataset.drop }).then(showErr); });
+  if ($('addDev')) $('addDev').onclick = async () => { const r = await post('api/ws/add_developer', {}); if (!showErr(r).error) setTimeout(() => { const i = document.querySelector(`[data-name="${r.added}"]`); if (i) { i.focus(); i.select(); } }, 150); };
+  box.querySelectorAll('[data-paste]').forEach(b => { b.onclick = () => openPaste(b.dataset.paste); });
+  box.querySelectorAll('[data-up]').forEach(b => { b.onclick = () => { upSide = b.dataset.up; $('upFiles').click(); }; });
+  box.querySelectorAll('[data-upf]').forEach(b => { b.onclick = () => { upSide = b.dataset.upf; $('upFolder').click(); }; });
+  box.querySelectorAll('[data-clear]').forEach(b => { b.onclick = () => post('api/ws/clear', { side: b.dataset.clear }).then(showErr); });
+  box.querySelectorAll('[data-rm]').forEach(b => { b.onclick = () => post('api/ws/remove', { side: b.dataset.side, file: b.dataset.rm }).then(showErr); });
+  box.querySelectorAll('[data-view]').forEach(b => { b.onclick = async () => { const r = await post('api/ws/read', { side: b.dataset.side, file: b.dataset.view }); if (r.error) return showErr(r); openPaste(b.dataset.side, r.file, r.content); }; });
+  box.querySelectorAll('[data-whole]').forEach(c => { c.onchange = () => post('api/ws/files', { side: c.dataset.whole, files: [], replace: c.checked }).then(showErr); });
+  box.querySelectorAll('[data-fgo]').forEach(b => { b.onclick = async () => { const s = b.dataset.fgo, inp = box.querySelector(`[data-fpath="${s}"]`); b.disabled = true; const r = await post('api/ws/folder', { side: s, path: inp.value }); b.disabled = false; showErr(r); }; });
+  box.querySelectorAll('[data-col]').forEach(col => {
+    col.ondragover = (e) => { e.preventDefault(); col.classList.add('drop'); };
+    col.ondragleave = () => col.classList.remove('drop');
+    col.ondrop = async (e) => { e.preventDefault(); col.classList.remove('drop'); const list = await droppedFiles(e.dataTransfer); upload(col.dataset.col, list, false); };
+  });
+}
+function showErr(r) { $('openErr').textContent = r && r.error ? r.error : ''; return r; }
+
+// paste one file
+let pasteSide = 'A';
+function openPaste(side, name, text) {
+  pasteSide = side; $('pErr').textContent = '';
+  $('pasteTitle').textContent = `${name ? 'Change' : 'Paste'} a file · ${side === 'base' ? 'Original' : (WS.names || {})[side] || SIDE_TITLE[side]}`;
+  $('pName').value = name || ''; $('pText').value = text || '';
+  $('pasteDlg').showModal(); (name ? $('pText') : $('pName')).focus();
+}
+$('pText').onkeydown = (e) => { if (e.key === 'Tab') { e.preventDefault(); $('pText').setRangeText('    ', $('pText').selectionStart, $('pText').selectionEnd, 'end'); } };
+$('pText').addEventListener('paste', () => setTimeout(() => { if (!$('pName').value.trim()) $('pName').value = guessName($('pText').value); }, 0));
+function guessName(code) {
+  const m = code.match(/\b(?:class|struct|interface|record|enum)\s+([A-Za-z_]\w*)/);
+  if (/^\s*(using\s+[\w.]+;|namespace\s)/m.test(code) || /\bpublic\s+(partial\s+)?class\b/.test(code)) return (m ? m[1] : 'Program') + '.cs';
+  if (/^\s*#include\s*[<"]/m.test(code)) return 'main.cpp';
+  if (/^\s*(def |import |from \w+ import )/m.test(code)) return 'main.py';
+  if (/^\s*<(!doctype|html)/i.test(code)) return 'index.html';
+  if (/\b(function|const|let|=>|require\(|export )/.test(code)) return (m ? m[1] : 'main') + '.js';
+  return m ? m[1] + '.txt' : '';
+}
+$('pAdd').onclick = async (e) => {
+  e.preventDefault();
+  const name = $('pName').value.trim() || guessName($('pText').value);
+  if (!name) { $('pErr').textContent = 'Give the file a name, like Player.cs.'; return; }
+  if (!$('pText').value.trim()) { $('pErr').textContent = 'Paste the code first.'; return; }
+  $('pAdd').disabled = true;
+  const r = await post('api/ws/files', { side: pasteSide, files: [{ path: name, text: $('pText').value }] });
+  $('pAdd').disabled = false;
+  if (r.error) { $('pErr').textContent = r.error; return; }
+  $('pasteDlg').close();
+};
+
+// upload files or a whole folder (big ones in batches)
+let upSide = 'A';
+const b64 = (file) => new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result).split(',')[1] || ''); fr.onerror = () => reject(fr.error); fr.readAsDataURL(file); });
+async function upload(side, items, isFolder) {
+  // items: [{ file, path }]
+  items = items.filter(x => !SKIP.test(x.path));
+  if (!items.length) { $('openErr').textContent = 'Nothing to upload (bin, obj, .git and node_modules are skipped).'; return; }
+  $('openErr').textContent = '';
+  const total = items.reduce((n, x) => n + x.file.size, 0);
+  let sent = 0, batch = [], bytes = 0, first = true;
+  const flush = async () => {
+    if (!batch.length) return;
+    const r = await post('api/ws/files', { side, files: batch, ...(first && isFolder ? { clear: true, replace: true } : {}) });
+    first = false; batch = []; bytes = 0;
+    if (r.error) throw new Error(r.error);
+  };
+  try {
+    for (const x of items) {
+      batch.push({ path: x.path, base64: await b64(x.file) }); bytes += x.file.size; sent += x.file.size;
+      busyUpload = `${side}:uploading ${Math.round(100 * sent / Math.max(1, total))}%`; renderSides();
+      if (bytes > 4e6 || batch.length >= 400) await flush();
+    }
+    await flush();
+  } catch (e) { $('openErr').textContent = e.message; }
+  busyUpload = ''; renderSides();
+}
+$('upFiles').onchange = () => { const l = [...$('upFiles').files].map(f => ({ file: f, path: f.name })); $('upFiles').value = ''; upload(upSide, l, false); };
+$('upFolder').onchange = () => {
+  const l = [...$('upFolder').files].map(f => ({ file: f, path: (f.webkitRelativePath || f.name).split('/').slice(1).join('/') || f.name }));
+  $('upFolder').value = ''; upload(upSide, l, true);
+};
+async function droppedFiles(dt) {
+  const out = [], entries = [...dt.items].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (!entries.length) return [...dt.files].map(f => ({ file: f, path: f.name }));
+  const walk = (entry, prefix) => new Promise((resolve) => {
+    if (entry.isFile) entry.file(f => { out.push({ file: f, path: prefix + f.name }); resolve(); }, () => resolve());
+    else if (entry.isDirectory) {
+      const rd = entry.createReader(), all = [];
+      const more = () => rd.readEntries(async (list) => { if (!list.length) { for (const e of all) await walk(e, prefix + entry.name + '/'); resolve(); } else { all.push(...list); more(); } }, () => resolve());
+      more();
+    } else resolve();
+  });
+  for (const e of entries) await walk(e, '');
+  // one dropped folder: its contents are the project
+  if (entries.length === 1 && entries[0].isDirectory) for (const x of out) x.path = x.path.split('/').slice(1).join('/');
+  return out;
+}
+$('title').onchange = () => post('api/ws/names', { title: $('title').value.trim() || 'My project' });
+
+// git pane
+function renderGit() {
+  const show = P.open && P.source !== 'workspace';
+  $('info').hidden = !show; $('branchRow').hidden = !show;
+  if (!show) return;
+  if (document.activeElement !== $('path')) $('path').value = P.path;
+  $('info').innerHTML = `<div class="gproj"><div class="gproj-h"><span class="note">Opened</span><b>${esc(P.name)}</b>${(P.languages || []).map(langChip).join('')}</div>
+    <dl class="gfacts">${P.configSource === 'checks' ? '<dt>How Tandemi checks it</dt><dd>It checks that the code compiles (no project file was found)</dd>' : `<dt>Build with</dt><dd><code>${esc(P.commands.build || '—')}</code></dd><dt>Tests</dt><dd>${P.commands.test ? `<code>${esc(P.commands.test)}</code>` : '<span class="muted">No tests found, so Tandemi only checks that it builds</span>'}</dd>`}</dl></div>`;
+  const names = P.branches.map(b => b.name);
+  const own = (n) => n.startsWith('origin/') || !n.includes('/'); // the project's own branches first, teammates' copies after
+  const work = names.filter(n => !/(^|\/)(main|master)$/.test(n)).sort((x, y) => own(y) - own(x)), mainB = names.filter(n => /(^|\/)(main|master)$/.test(n)).sort((x, y) => own(y) - own(x))[0];
+  const gA = P.a || names.find(n => /(^|\/)dev-?a$/.test(n)) || work[0] || names[0];
+  const gB = P.b || names.find(n => /(^|\/)dev-?b$/.test(n) && n !== gA) || work.find(n => n !== gA && own(n)) || (mainB && mainB !== gA ? mainB : null) || work.find(n => n !== gA) || names.find(n => n !== gA) || names[0];
+  const more = [...$('moreBr').querySelectorAll('select')];
+  more.forEach((sel, i) => { if (!sel.value) sel.dataset.guess = work.find(n => ![gA, gB, ...more.slice(0, i).map(x => x.value)].includes(n)) || names[0]; });
+  for (const [sel, guess] of [[$('brA'), gA], [$('brB'), gB], ...more.map(m => [m, m.dataset.guess])]) {
+    const keep = sel.value && names.includes(sel.value) ? sel.value : guess;
+    sel.innerHTML = P.branches.map(b => `<option value="${esc(b.name)}"${b.name === keep ? ' selected' : ''}>${esc(b.name)} · ${esc(b.author)} · ${esc(b.when)}</option>`).join('');
+  }
+}
+$('openBtn').onclick = async () => { showErr(); const r = await post('api/project/open', { path: $('path').value }); if (showErr(r).error) return; P = r; render(); };
+$('path').onkeydown = (e) => { if (e.key === 'Enter') $('openBtn').click(); };
+$('ghBtn').onclick = async () => {
+  showErr(); $('ghBtn').disabled = true; const label = $('ghBtn').textContent; $('ghBtn').textContent = 'Downloading from GitHub…';
+  const r = await post('api/project/clone', { url: $('ghUrl').value });
+  $('ghBtn').disabled = false; $('ghBtn').textContent = label;
+  if (!showErr(r).error) { P = r; render(); }
+};
+$('ghUrl').onkeydown = (e) => { if (e.key === 'Enter') $('ghBtn').click(); };
+$('fetchBtn').onclick = async () => showErr(await post('api/project/fetch'));
+$('forkBtn').onclick = async () => {
+  showErr(); $('forkMsg').textContent = ''; $('forkBtn').disabled = true; $('forkBtn').textContent = 'Downloading…';
+  const r = await post('api/project/add_fork', { url: $('forkUrl').value });
+  $('forkBtn').disabled = false; $('forkBtn').textContent = 'Add their copy';
+  if (r.error) { $('forkMsg').textContent = r.error; return; }
+  P = r.state || r; $('forkUrl').value = ''; $('forkMsg').textContent = r.added ? `Added: ${r.added.length} branch${r.added.length === 1 ? '' : 'es'} from ${r.remote} (${r.added.slice(0, 4).join(', ')}${r.added.length > 4 ? '…' : ''}).` : ''; render();
+};
+$('forkUrl').onkeydown = (e) => { if (e.key === 'Enter') $('forkBtn').click(); };
+$('addBrBtn').onclick = () => {
+  const n = $('moreBr').querySelectorAll('select').length, k = 'CDEFGHIJKL'[n];
+  if (!k) return;
+  const lab = document.createElement('label'); lab.className = 'f';
+  lab.className = 'f gdev'; lab.innerHTML = `<span><i class="tag">${k}</i>Developer ${k}'s branch <button class="btn small" type="button" aria-label="Remove this branch" style="padding:0 8px">×</button></span><select></select>`;
+  lab.querySelector('button').onclick = (e) => { e.preventDefault(); lab.remove(); renderGit(); };
+  $('moreBr').appendChild(lab); renderGit();
+};
+$('sampleBtn').onclick = async () => {
+  showErr(); $('sampleBtn').disabled = true;
+  const r = await post('api/project/sample'); $('sampleBtn').disabled = false;
+  if (showErr(r).error) return;
+  P = r; render(); startMerge();
+};
+
+// the one button
+async function startMerge() {
+  showErr(); editor = { file: null, dirty: false }; renderedKey = '';
+  let r;
+  if (src === 'code') r = await post('api/ws/merge');
+  else {
+    if (!P.open || P.source === 'workspace') { $('openErr').textContent = src === 'git' ? 'Open a project folder or a GitHub link first.' : 'Load the example first.'; return; }
+    const a = $('brA').value, b = $('brB').value, more = src === 'git' ? [...$('moreBr').querySelectorAll('select')].map(x => x.value) : [];
+    const all = [a, b, ...more];
+    if (src === 'git' && new Set(all).size !== all.length) { $('openErr').textContent = 'Choose a different branch for each developer.'; return; }
+    r = more.length ? await post('api/team/start', { branches: all }) : await post('api/project/merge', { a, b });
+  }
+  if (showErr(r).error) return;
+  setTimeout(() => $('result').scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+}
+$('mergeBtn').onclick = startMerge;
+
+function renderTop() {
+  const busy = !!P.busy || !!T.busy;
+  const wsReady = WS.sides && (WS.devs || ['A', 'B']).every(k => WS.sides[k] && WS.sides[k].count);
+  $('mergeBtn').disabled = busy || (src === 'code' && !wsReady) || (src !== 'code' && !(P.open && P.source !== 'workspace'));
+  if (teamOn()) {
+    const open = (T.bugs || []).filter(b => b.status === 'open').length;
+    $('dot').className = 'dot ' + (T.busy || T.autoFixing ? 'busy' : T.phase === 'error' ? 'bad' : T.phase === 'done' ? (open || (T.blocked || []).length ? 'bad' : 'ok') : '');
+    $('step').textContent = T.autoFixing ? 'The agents are fixing the bugs…' : T.step || '';
+    $('mergeBtn').textContent = 'Merge and test';
+    $('mAuto').setAttribute('aria-pressed', String(T.mode !== 'report')); $('mReport').setAttribute('aria-pressed', String(T.mode === 'report'));
+    return;
+  }
+  $('mergeBtn').textContent = src === 'example' ? 'Merge the example again' : 'Merge and test';
+  ['fetchBtn', 'sampleBtn', 'openBtn', 'ghBtn'].forEach(id => { $(id).disabled = busy; });
+  const mine = P.open && ((src === 'code') === (P.source === 'workspace'));
+  $('dot').className = 'dot ' + (!mine ? '' : busy || P.autoFixing ? 'busy' : P.phase === 'error' ? 'bad' : P.phase === 'done' ? (P.bugs.some(b => b.status === 'open') ? 'bad' : 'ok') : '');
+  $('step').textContent = !mine ? (src === 'code' ? (wsReady ? 'Ready.' : "Add every developer's code.") : src === 'git' ? 'Open a project, then choose the two branches.' : '') : P.autoFixing ? 'The agents are fixing the bugs…' : P.step || (P.phase === 'idle' ? 'Ready.' : '');
+  $('mAuto').setAttribute('aria-pressed', String(P.mode !== 'report')); $('mReport').setAttribute('aria-pressed', String(P.mode === 'report'));
+}
+// the header switch is the same setting as in Settings (the owner's); on another laptop it changes only what you see now
+$('mAuto').onclick = () => post('api/settings', { changes: { mode: 'auto' } }).then(r => (r.error ? post('api/project/mode', { mode: 'auto' }) : r)).then(() => post('api/project/state')).then(r => { if (!r.error) { P = r; render(); } });
+$('mReport').onclick = () => post('api/settings', { changes: { mode: 'report' } }).then(r => (r.error ? post('api/project/mode', { mode: 'report' }) : r)).then(() => post('api/project/state')).then(r => { if (!r.error) { P = r; render(); } });
+
+const alsoHtml = (b) => (b.status === 'open' && b.alsoAt && b.alsoAt.length ? `<div class="hint">⚠️ <b>${esc(b.oldName)}</b> is also still used in ${b.alsoAt.map(a => `<button class="btn small" data-edit="${esc(a.file)}" data-line="${a.line}">${esc(a.file.split('/').pop())} line ${a.line}</button>`).join(' ')}. The ${P.checksOnly || T.checksOnly ? 'check' : 'build'} stops before it gets there, so it will show up as a new bug after this one. Fix ${b.alsoAt.length === 1 ? 'it' : 'them'} too${b.newName ? ` (use ${esc(b.newName)})` : ''}.</div>` : '');
+// a clash between two changes: the exact lines each developer changed, and what Tandemi saw when it undid one at a time
+const clashHtml = (b) => {
+  if (b.status !== 'open' || !b.clash) return '';
+  const rows = ['A', 'B'].flatMap(s => (b.clash[s] || []).map(c => `<div class="chg">${ownerChip(s)}<span class="muted">${esc(c.file.split('/').pop())}</span><code class="was">${esc(c.before || '(not there before)')}</code><span>→</span><code>${esc(c.after)}</code></div>`));
+  if (!rows.length) return '';
+  const tries = b.tries || [], good = tries.filter(x => x.passes);
+  const tried = tries.length ? `<div class="hint">🧪 <b>Tandemi tried it.</b> ${tries.map(x => `Without ${esc(who(x.side))}'s ${esc(x.name)} change: ${x.passes ? (x.allPass ? '<b>every test passes ✓</b>' : `<b>this test passes</b> (${esc(x.summary)})`) : 'still fails'}.`).join(' ')}<br>${good.length ? `To fix it, change ${good.map(x => `<button class="btn small" data-edit="${esc(x.file)}" data-line="${x.line || ''}">${esc(x.name)} in ${esc(x.file.split('/').pop())}</button>`).join(' or ')}. Undo that change, or choose a value that works with the other one.` : 'Undoing one change alone is not enough, so the two changes have to be fitted together.'}</div>` : '';
+  return `<div class="changed-lines"><span class="k">What each one changed</span>${rows.join('')}</div>${tried}`;
+};
+const fixedList = () => { const f = (P.bugs || []).filter(b => b.status === 'fixed'); return f.length ? `${f.length === 1 ? 'Bug ' + f[0].id : 'Bugs ' + f.map(b => b.id).join(', ')} fixed ✓. ` : ''; };
+const newChip = (b) => (b.status === 'open' && b.isNew ? '<span class="chip" title="Found after the last fix: the build got further">new</span>' : '') + (b.kind === 'static' ? '<span class="chip" title="No compiler or test reported this: Tandemi found it by reading the merged code">found by reading the code</span>' : '');
+// ---------------------------------------------------------------- step 2 and 3: what happened, final code
+function testsCol(title, run, dev) {
+  if (!run) return `<div class="tcol"><h4>${title}</h4><span class="muted">Not run yet.</span></div>`;
+  const head = `<h4><span>${title}</span><span class="chip ${run.ok ? 'pass' : 'fail'}">${esc(run.summary)}</span></h4>`;
+  if (run.build && !run.build.ok) return `<div class="tcol" ${dev ? DEV[dev] : ''}>${head}${run.build.errors.slice(0, 6).map(e => `<div class="t bad"><span class="mk">✕</span><span>${e.file ? esc(e.file.split('/').pop()) + (e.line ? ' line ' + e.line : '') + ': ' : ''}${esc(e.message.replace(/ and no accessible extension[\s\S]*$/, '.'))}</span></div>`).join('')}${run.build.errors.length > 6 ? `<span class="muted">… and ${run.build.errors.length - 6} more</span>` : ''}</div>`;
+  return `<div class="tcol">${head}${run.tests.slice(0, 200).map(t => `<div class="t ${t.ok ? 'ok' : t.skipped ? '' : 'bad'}"><span class="mk">${t.ok ? '✓' : t.skipped ? '·' : '✕'}</span><span>${esc(t.name)}${!t.ok && t.message ? `<small>${esc(t.message.split('\n')[0].replace(/^System\.Exception: /, ''))}</small>` : ''}</span></div>`).join('') || `<span class="muted">${P.checksOnly ? 'Compiles. No tests.' : 'Builds. No tests ran.'}</span>`}</div>`;
+}
+const METHOD = (f) => (f.method === 'ast' ? `merged by structure${f.language ? ' (' + f.language + ')' : ''}${f.lineConflicts ? ` · a line merge would conflict ${f.lineConflicts}×` : ''}` : f.method === 'lines' ? 'merged line by line' : f.method === 'one side' ? 'only one developer changed it' : f.method === 'same' ? 'both made the same change' : f.method === 'build output' ? 'build output: not merged, rebuilt' : 'whole file');
+
+function renderResult() {
+  const el = $('result');
+  if (!P.open || !P.devs || P.phase === 'idle') { el.hidden = true; return; }
+  el.hidden = false;
+  const key = JSON.stringify([P.phase, P.busy, P.autoFixing, P.mode, P.a, P.b, P.files.map(f => [f.file, f.conflicts.map(c => [c.pick, c.busy])]), P.runs, P.bugs.map(b => [b.id, b.status, b.fixing]), P.mergeBranch, P.hasAI, P.mergedFiles, P.log.length]);
+  if (key === renderedKey) return;
+  const keepEditor = editor.file && editor.dirty && $('edText') ? { file: editor.file, text: $('edText').value } : null;
+  const wasOpen = $('logDetails') ? $('logDetails').open : false;
+  renderedKey = key;
+  const total = P.files.reduce((n, f) => n + f.conflicts.length, 0), solved = P.files.reduce((n, f) => n + f.conflicts.filter(c => c.pick).length, 0);
+  const ast = P.files.filter(f => f.method === 'ast').length;
+  const open = P.bugs.filter(b => b.status === 'open'), fixed = P.bugs.filter(b => b.status === 'fixed');
+  const done = P.phase === 'done' && !P.busy && !P.autoFixing;
+  celebrate('p', done && P.runs.merged && P.runs.merged.ok && !open.length);
+  const visible = P.files.filter(f => !f.generated);
+
+  // 2 · what happened
+  const people = ['A', 'B'].map(k => ({ key: k, name: who(k), sub: isWS() ? `${who(k)}'s version` : `${P.devs[k].branch}${P.devs[k].commits != null ? ', ' + P.devs[k].commits + ' commit' + (P.devs[k].commits === 1 ? '' : 's') : ''}` }));
+  const gitStop = P.gitView ? P.gitView.conflictFiles.length : null;
+  let html = `<section class="card"><h2><span class="num">2</span>What happened</h2>
+    ${scoreHtml(people, P.runs.merged, P.checksOnly, P.busy || P.autoFixing || (P.phase !== 'done' && !P.runs.merged))}
+    <div class="steps">
+      ${gitStop !== null ? `<span class="chip ${gitStop ? 'busy' : 'pass'}">git would stop on ${gitStop} file${gitStop === 1 ? '' : 's'}</span>` : ''}
+      <span class="chip ${total - solved ? 'fail' : 'pass'}">${total ? `${total} real conflict${total === 1 ? '' : 's'}${total - solved ? ` (${solved} solved)` : ', all solved'}` : '✓ 0 real conflicts'}</span>
+      <span class="chip pass">✓ ${ast} of ${visible.length} file${visible.length === 1 ? '' : 's'} merged by structure</span>
+      ${P.runs.merged ? `<span class="chip ${open.length ? 'fail' : 'pass'}">${open.length ? `${open.length} open bug${open.length === 1 ? '' : 's'}` : '✓ no open bugs'}${fixed.length ? `, ${fixed.length} fixed` : ''}</span>` : ''}
+    </div>
+    <div class="timeline" aria-label="What Tandemi did">${P.log.slice(-12).map(l => `<div class="${l.cls || ''}">${esc(l.text)}</div>`).join('')}</div>
+    <details id="logDetails"${wasOpen ? ' open' : ''}><summary>Details: every changed file${P.runs.A || P.runs.merged ? ', builds and tests' : ''}</summary>
+      <div class="files" style="margin-top:10px">${visible.slice(0, 500).map(f => {
+        const from = f.from === 'both' ? '<span class="chip both">both</span>' : `<span class="chip ${f.from}">${esc(who(f.from))}</span>`;
+        const short = (l) => (l.length > 10 ? l.slice(0, 10).join(', ') + ` … and ${l.length - 10} more` : l.join(', '));
+        const ch = f.changes ? ['A', 'B'].filter(s => f.changes[s] && f.changes[s].length).map(s => `<span ${DEV[s]}><b style="color:var(--dev)">${esc(who(s))}:</b> ${esc(short(f.changes[s]))}</span>`).join(' · ') : '';
+        return `<div class="file"><span class="p">${esc(f.file)}</span><span>${from}</span><span class="c">${esc(METHOD(f))}${f.parseError ? ` · <b>syntax error in ${esc(who(f.parseError.side))}'s version${f.parseError.line ? ' line ' + f.parseError.line : ''}</b>` : ''}${ch ? '<br>' + ch : ''}</span></div>`;
+      }).join('')}${visible.length > 500 ? `<p class="note">… and ${visible.length - 500} more files.</p>` : ''}</div>
+      ${P.runs.A || P.runs.B || P.runs.merged ? `<p class="note" style="margin-top:12px">Each version alone first, then the merged code. Something that works in both versions but breaks after the merge means the two changes clash.</p><div class="tests">${testsCol(esc(sideLabel('A')), P.runs.A, 'A')}${testsCol(esc(sideLabel('B')), P.runs.B, 'B')}${testsCol('Merged code', P.runs.merged)}</div>` : ''}
+    </details></section>`;
+
+  // real conflicts
+  if (total) {
+    html += `<section class="card"><h2>Real conflicts <span class="chip ${total - solved ? 'fail' : 'pass'}">${solved} of ${total} solved</span></h2><p class="note">Both developers changed the same part in different ways. Choose what to keep${P.hasAI ? ', or let AI combine them' : ''}. When all are solved, Tandemi builds and tests the merged code.</p>`;
+    for (const f of P.files) for (const c of f.conflicts) html += `<div class="conf ${c.pick ? 'done' : ''}"><h4>${esc(f.file)} · ${esc(c.label)}${c.note ? ` <span class="muted">· ${esc(c.note)}</span>` : ''}</h4>
+      <div class="two">${['A', 'B'].map(s => `<div class="side" ${DEV[s]}><span class="k">${esc(who(s))}</span><pre>${esc((s === 'A' ? c.a : c.b) || '(removed it)')}</pre></div>`).join('')}</div>
+      ${c.pick ? `<p class="note">Chosen: ${c.pick === 'custom' ? (c.why ? 'AI combined them. ' + esc(c.why) : 'both, one after the other') : esc(who(c.pick)) + "'s version"}</p>` : `<div class="acts"><button class="btn small" data-pick="A" data-file="${esc(f.file)}" data-id="${c.id}">Use ${esc(who('A'))}'s</button><button class="btn small" data-pick="B" data-file="${esc(f.file)}" data-id="${c.id}">Use ${esc(who('B'))}'s</button>${c.binary || c.deleted ? '' : `<button class="btn small" data-pick="both" data-file="${esc(f.file)}" data-id="${c.id}">Keep both</button>`}${P.hasAI && !c.binary ? `<button class="btn small primary" data-ai="${c.id}" data-file="${esc(f.file)}"${c.busy ? ' disabled' : ''}>${c.busy ? 'AI is combining…' : 'Let AI combine'}</button>` : ''}</div>`}</div>`;
+    html += '</section>';
+  }
+
+  // bugs
+  if (P.runs.merged) {
+    const agentsNote = P.mode === 'report' ? 'Just report: Tandemi tells who has to fix what; nobody fixes automatically.' : P.hasAI ? "Agents fix it: each bug goes to its developer's agent, which fixes it and Tandemi checks again (up to 3 rounds). A fix is kept only if the bug is gone." : 'Agents fix it is on, but no agent is connected: connect Claude at the top (Claude Code with your subscription, or an API key), or press “Copy for Claude” on a bug.';
+    html += `<section class="card"><h2>Bugs <span class="chip ${open.length ? 'fail' : 'pass'}">${open.length ? open.length + ' open' : 'none open'}</span>${P.autoFixing ? '<span class="chip">agents fixing…</span>' : ''}</h2><p class="note">${agentsNote}</p>`;
+    if (open.length) html += `<div class="acts">${P.hasAI ? `<button class="btn primary" id="fixAllBtn"${P.autoFixing || P.busy ? ' disabled' : ''}>${P.autoFixing ? 'The agents are fixing…' : `Let the agents fix ${open.length === 1 ? 'it' : 'all ' + open.length + ' bugs'}`}</button>` : '<span class="muted">To let AI fix these on its own, connect Claude at the top of the page. Or press “Copy for Claude” on a bug and paste it in Claude Desktop.</span>'}</div>`;
+    html += P.bugs.length ? `<div class="bugs">${P.bugs.map(b => `<div class="bug ${b.status}${b.clash || b.owner === 'both' ? ' clashy' : ''}"><div class="bug-head"><h4>${esc(b.title)}</h4><span class="chip">Bug ${b.id}</span>${newChip(b)}${ownerChip(b.owner)}<span class="chip ${b.status === 'open' ? 'fail' : 'pass'}">${b.status === 'open' ? (b.fixing ? 'agent fixing…' : 'Open') : 'Fixed'}</span></div>
+      ${b.file ? `<p><span class="k">Where</span>${esc(b.file)}${b.line ? ' line ' + b.line : ''}</p>` : ''}
+      ${b.kind === 'test' && b.message ? `<p><span class="k">What the test saw</span>${esc(b.message.split('\n')[0].replace(/^System\.Exception: /, ''))}</p>` : ''}
+      <p><span class="k">Why it went to ${esc(who(b.owner))}</span>${esc(b.why)}</p>
+      ${clashHtml(b)}${b.hint ? `<div class="hint">💡 ${esc(b.hint)}</div>` : ''}${alsoHtml(b)}
+      ${b.status === 'fixed' && b.fixedNote ? `<p class="muted">${esc(b.fixedNote)}</p>` : ''}
+      ${b.status === 'open' ? `<div class="acts">${b.file ? `<button class="btn small" data-edit="${esc(b.file)}" data-line="${b.line || ''}">Fix it here</button>` : ''}<button class="btn small" data-ccopy="${b.id}">${ic('claude')}Copy for Claude</button>${P.hasAI ? `<button class="btn small primary" data-fix="${b.id}"${b.fixing || P.busy || P.autoFixing ? ' disabled' : ''}>${ic('claude')}Let ${b.owner === 'both' ? 'the agents' : esc(who(b.owner)) + "'s agent"} fix it</button>` : ''}</div>` : ''}</div>`).join('')}</div>` : P.setupProblem ? `<div class="hint">⚙️ ${esc(P.setupProblem)}</div>` : `<p class="note">No bugs: the merged code ${P.checksOnly ? 'compiles' : 'builds and every test passes'}.</p>`;
+    html += '</section>';
+  } else if (P.phase === 'done') html += `<section class="card"><h2>Not checked</h2><p class="note">Tandemi merged it but found nothing to build or compile it with. For C#, install the .NET SDK; for a git project you can add a <code>tandemi.json</code> with "build" and "test".</p></section>`;
+
+  // 3 · final code
+  if (P.phase === 'done' || P.runs.merged) {
+    html += `<section class="card"><h2><span class="num">3</span>Final code</h2>
+      ${done && P.setupProblem && !open.length ? `<div class="banner bad">⚙️ ${esc(P.setupProblem)}</div>` : done ? `<div class="banner ${open.length ? 'bad' : ''}">${open.length ? `${fixedList()}${open.length === 1 ? `1 bug is still open: <b>${esc(open[0].title)}</b> (bug ${open[0].id}${open[0].isNew ? ', new' : ''}).` : `${open.length} bugs are still open: ${open.map(b => `bug ${b.id}${b.isNew ? ' (new)' : ''}`).join(', ')}.`} See Bugs above, fix it in the code below, or take the code as it is.` : `Ready: the merged code ${P.runs.merged ? (P.checksOnly ? 'compiles' : 'builds' + (P.runs.merged.ranTests ? ' and every test passes' : '')) : 'is merged (not checked)'}.`}</div>` : '<p class="note">Still working…</p>'}
+      <div class="final"><a class="btn primary" href="final.zip" id="dlBtn">Download final code (.zip)</a>${isWS() ? '' : `<button class="btn" id="saveBtn"${P.busy ? ' disabled' : ''}>Save as merge branch</button>`}<button class="btn" id="retestBtn"${P.busy ? ' disabled' : ''}>Test again</button></div>
+      ${P.mergeBranch ? `<div class="saved"><span>Saved as <b>${esc(P.mergeBranch.name)}</b> (${esc(P.mergeBranch.commit)}).</span><span>Next: <code>${esc(P.mergeBranch.push)}</code></span></div>` : ''}<p class="err" id="saveErr"></p>
+      <h3 style="margin:8px 0 0;font:700 16px var(--f-display)">Look at it or change it</h3>
+      <p class="note">Every save checks it again. Lines are coloured by who wrote them. AI coders can do the same through the MCP.</p>
+      <div class="row"><label class="f grow">File<select id="edFile">${P.mergedFiles.slice(0, 3000).map(f => `<option${f === editor.file ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select></label><button class="btn" id="edShow">Show who wrote what</button></div>
+      <div class="legend"><span><i style="background:var(--a)"></i>${esc(who('A'))}</span><span><i style="background:var(--b)"></i>${esc(who('B'))}</span><span><i style="background:var(--pass)"></i>Both</span><span>Uncoloured: it was already there.</span></div>
+      <div id="edArea" class="editor"></div></section>`;
+  }
+  el.innerHTML = html;
+  if ($('edFile')) {
+    $('edFile').onchange = () => { editor = { file: $('edFile').value, dirty: false }; loadFile(); };
+    $('edShow').onclick = () => loadFile(true);
+    if (!editor.file || !P.mergedFiles.includes(editor.file)) editor.file = (open.find(b => b.file) || {}).file || P.mergedFiles[0];
+    $('edFile').value = editor.file;
+    if (keepEditor && keepEditor.file === editor.file) showEditor(keepEditor.text, true); else loadFile();
+  }
+  if ($('saveBtn')) $('saveBtn').onclick = async () => { $('saveErr').textContent = ''; const r = await post('api/project/branch'); if (r.error) $('saveErr').textContent = r.error; };
+  if ($('fixAllBtn')) $('fixAllBtn').onclick = () => { $('fixAllBtn').disabled = true; post('api/project/fix_all').then(showErr); };
+  if ($('retestBtn')) $('retestBtn').onclick = () => post('api/project/retest').then(r => { if (r.error) $('saveErr').textContent = r.error; });
+  if ($('dlBtn')) $('dlBtn').onclick = async (e) => { e.preventDefault(); const r = await fetch('final.zip'); if (!r.ok) { $('saveErr').textContent = await r.text(); return; } const blob = await r.blob(), a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = ((r.headers.get('content-disposition') || '').match(/filename="([^"]+)"/) || [, 'final-code.zip'])[1]; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+  el.querySelectorAll('[data-pick]').forEach(b => { b.onclick = () => { b.disabled = true; post('api/project/pick', { file: b.dataset.file, id: +b.dataset.id, pick: b.dataset.pick }).then(showErr); }; });
+  el.querySelectorAll('[data-ai]').forEach(b => { b.onclick = () => { b.disabled = true; post('api/project/ai', { file: b.dataset.file, id: +b.dataset.ai }).then(showErr); }; });
+  el.querySelectorAll('[data-ccopy]').forEach(b => { b.onclick = () => copyForClaude(P.bugs.find(x => x.id === +b.dataset.ccopy) || { id: +b.dataset.ccopy }, false, b); });
+  el.querySelectorAll('[data-fix]').forEach(b => { b.onclick = () => { b.disabled = true; post('api/project/fix', { bug: +b.dataset.fix }).then(showErr); }; });
+  el.querySelectorAll('[data-edit]').forEach(b => { b.onclick = () => { editor = { file: b.dataset.edit, dirty: false, line: +b.dataset.line || null }; $('edFile').value = editor.file; loadFile(); $('edArea').scrollIntoView({ behavior: 'smooth', block: 'center' }); }; });
+}
+// ---------------------------------------------------------------- a whole team (3 or more developers)
+function renderTeam() {
+  const el = $('result');
+  if (!T.devs || !T.devs.length || T.phase === 'idle') { el.hidden = true; return; }
+  el.hidden = false;
+  const key = JSON.stringify([T.phase, T.busy, T.autoFixing, T.mode, T.devs.map(d => [d.status, d.run && d.run.summary]), T.blocked, T.bugs.map(b => [b.id, b.status, b.fixing, b.owner]), T.runs, T.safe, T.final, T.mergeBranch, T.hasAI, T.mergedFiles, T.log.length]);
+  if (key === teamKey) return;
+  const keepEditor = editor.file && editor.dirty && $('edText') ? { file: editor.file, text: $('edText').value } : null;
+  const wasOpen = $('logDetails') ? $('logDetails').open : false;
+  teamKey = key;
+  const open = T.bugs.filter(b => b.status === 'open'), fixed = T.bugs.filter(b => b.status === 'fixed');
+  const done = T.phase === 'done' && !T.busy && !T.autoFixing;
+  celebrate('t', done && T.runs.full && T.runs.full.ok && !open.length && T.included.length === T.devs.length);
+  const n = T.devs.length, gitPairs = T.gitView ? T.gitView.pairs.length : 0;
+  const conflicts = T.blocked.reduce((x, b) => x + b.conflicts.length, 0);
+  const label = (k) => (T.source === 'workspace' ? `${tn(k)}'s version` : `${(T.devs.find(d => d.key === k) || {}).branch} (${tn(k)})`);
+  let html = `<section class="card"><h2><span class="num">2</span>What happened <span class="chip">${n} developers</span></h2>
+    ${scoreHtml(T.devs.map(d => ({ key: d.key, name: d.name, sub: T.source === 'workspace' ? '' : d.branch })), T.runs.full, T.checksOnly, T.busy || T.autoFixing || T.phase !== 'done')}
+    <div class="steps">
+      <span class="chip ${gitPairs ? 'busy' : 'pass'}">git would stop on ${gitPairs} pair${gitPairs === 1 ? '' : 's'}</span>
+      <span class="chip ${conflicts ? 'fail' : 'pass'}">${conflicts ? `${conflicts} real conflict${conflicts === 1 ? '' : 's'}` : '✓ 0 real conflicts'}</span>
+      <span class="chip ${T.included.length === n ? 'pass' : 'busy'}">${T.included.length} of ${n} working together</span>
+      <span class="chip ${open.length ? 'fail' : 'pass'}">${open.length ? `${open.length} open bug${open.length === 1 ? '' : 's'}` : '✓ no open bugs'}${fixed.length ? `, ${fixed.length} fixed` : ''}</span>
+    </div>
+    <div class="board">${T.devs.map(d => `<div class="dev ${d.status.state}" ${DEV[d.key] || ''}><h3>${esc(d.name)}</h3>
+      <div class="r">${T.source === 'workspace' ? '' : `<b>${esc(d.branch)}</b> · `}${d.commits} commit${d.commits === 1 ? '' : 's'}${d.run ? ' · alone: ' + esc(d.run.summary) : ''}</div>
+      <div class="st">${d.status.state === 'merged' ? '✓ ' : d.status.state === 'working' ? '… ' : '⏸ '}${esc(d.status.text || 'Checking…')}</div></div>`).join('')}</div>
+    <div class="timeline" aria-label="What Tandemi did">${T.log.slice(-14).map(l => `<div class="${l.cls || ''}">${esc(l.text)}</div>`).join('')}</div>
+    <details id="logDetails"${wasOpen ? ' open' : ''}><summary>Details: every changed file and every check</summary>
+      <div class="files" style="margin-top:10px">${T.files.slice(0, 500).map(f => `<div class="file"><span class="p">${esc(f.file)}</span><span>${f.by.map(tchip).join(' ')}</span><span class="c">${f.method === 'waits' ? 'waits (its developer has a real conflict)' : f.method === 'ast' ? `merged by structure${f.language ? ' (' + esc(f.language) + ')' : ''}` : f.method === 'lines' ? 'merged line by line' : f.method === 'same' ? 'the same change' : f.method === 'one side' ? 'one developer changed it' : esc(f.method)}</span></div>`).join('')}</div>
+      <div class="tests" style="margin-top:12px">${T.devs.map(d => testsCol(esc(label(d.key)) + ' alone', d.run, d.key)).join('')}${testsCol('Together: ' + esc(tlist(T.together)), T.runs.full)}${T.runs.safe ? testsCol('Works now: ' + esc(tlist(T.safe)), T.runs.safe) : ''}</div>
+    </details></section>`;
+  // real conflicts: a developer waits until they're solved
+  if (T.blocked.length) {
+    html += `<section class="card"><h2>Real conflicts <span class="chip fail">${conflicts}</span></h2><p class="note">Two developers changed the same part in different ways. The later one waits. Choose what to keep${T.hasAI ? ', or let AI combine them' : ''}; then they join and Tandemi checks everyone again.</p>`;
+    for (const b of T.blocked) for (const c of b.conflicts) html += `<div class="conf"><h4>${esc(c.file)} · ${esc(c.label)}${c.note ? ` <span class="muted">· ${esc(c.note)}</span>` : ''}</h4>
+      <div class="two">${[[c.with, c.a], [b.key, c.b]].map(([k, code]) => `<div class="side" ${DEV[k] || ''}><span class="k">${esc(tn(k))}</span><pre>${esc(code || '(removed it)')}</pre></div>`).join('')}</div>
+      <div class="acts"><button class="btn small" data-tres="with" data-k="${b.key}" data-file="${esc(c.file)}" data-label="${esc(c.label)}">Keep ${esc(tn(c.with))}'s</button><button class="btn small" data-tres="self" data-k="${b.key}" data-file="${esc(c.file)}" data-label="${esc(c.label)}">Keep ${esc(tn(b.key))}'s</button>${c.binary ? '' : `<button class="btn small" data-tres="both" data-k="${b.key}" data-file="${esc(c.file)}" data-label="${esc(c.label)}">Keep both</button>`}${T.hasAI && !c.binary ? `<button class="btn small primary" data-tai="1" data-k="${b.key}" data-file="${esc(c.file)}" data-label="${esc(c.label)}"${c.busy || T.busy ? ' disabled' : ''}>${c.busy ? 'AI is combining…' : 'Let AI combine'}</button>` : ''}</div></div>`;
+    html += '</section>';
+  }
+  // bugs
+  if (T.runs.full) {
+    const agentsNote = T.mode === 'report' ? 'Just report: Tandemi tells who has to fix what; nobody fixes automatically.' : T.hasAI ? "Agents fix it: each bug goes to its developer's agent, which fixes it in the merged code; Tandemi checks everyone again and keeps a fix only if the bug is gone." : 'Agents fix it is on, but no agent is connected: connect Claude at the top (Claude Code with your subscription, or an API key), or press “Copy for Claude” on a bug.';
+    html += `<section class="card"><h2>Bugs <span class="chip ${open.length ? 'fail' : 'pass'}">${open.length ? open.length + ' open' : 'none open'}</span>${T.autoFixing ? '<span class="chip">agents fixing…</span>' : ''}</h2><p class="note">${agentsNote}</p>`;
+    if (open.length) html += `<div class="acts">${T.hasAI ? `<button class="btn primary" id="tFixAll"${T.autoFixing || T.busy ? ' disabled' : ''}>${T.autoFixing ? 'The agents are fixing…' : `Let the agents fix ${open.length === 1 ? 'it' : 'all ' + open.length + ' bugs'}`}</button>` : '<span class="muted">To let AI fix these on its own, connect Claude at the top of the page. Or press “Copy for Claude” on a bug and paste it in Claude Desktop.</span>'}</div>`;
+    html += T.bugs.length ? `<div class="bugs">${T.bugs.map(b => `<div class="bug ${b.status}${b.partner ? ' clashy' : ''}"><div class="bug-head"><h4>${esc(b.title)}</h4><span class="chip">Bug ${b.id}</span>${newChip(b)}${tchip(b.owner)}${b.partner ? `<span class="muted">clashes with</span>${tchip(b.partner)}` : ''}<span class="chip ${b.status === 'open' ? 'fail' : 'pass'}">${b.status === 'open' ? (b.fixing ? 'agent fixing…' : 'Open') : 'Fixed'}</span></div>
+      ${b.file ? `<p><span class="k">Where</span>${esc(b.file)}${b.line ? ' line ' + b.line : ''}</p>` : ''}
+      ${b.kind === 'test' && b.message ? `<p><span class="k">What the test saw</span>${esc(String(b.message).split('\n')[0].replace(/^System\.Exception: /, ''))}</p>` : ''}
+      <p><span class="k">Why it went to ${esc(tn(b.owner))}</span>${esc(b.why)}</p>
+      ${b.hint ? `<div class="hint">💡 ${esc(b.hint)}</div>` : ''}${alsoHtml(b)}
+      ${b.status === 'fixed' && b.fixedNote ? `<p class="muted">${esc(b.fixedNote)}</p>` : ''}
+      ${b.status === 'open' ? `<div class="acts">${b.file ? `<button class="btn small" data-edit="${esc(b.file)}" data-line="${b.line || ''}">Fix it here</button>` : ''}<button class="btn small" data-tccopy="${b.id}">${ic('claude')}Copy for Claude</button>${T.hasAI ? `<button class="btn small primary" data-tfix="${b.id}"${b.fixing || T.busy || T.autoFixing ? ' disabled' : ''}>${ic('claude')}Let ${esc(tn(b.owner))}'s agent fix it</button>` : ''}</div>` : ''}</div>`).join('')}</div>` : `<p class="note">No bugs: ${esc(tlist(T.together))} work together.</p>`;
+    html += '</section>';
+  }
+  // 3 · final code
+  if (T.phase === 'done' || T.runs.full) {
+    const waiting = T.devs.filter(d => !T.included.includes(d.key)).map(d => d.key);
+    const banner = !done ? '<p class="note">Still working…</p>'
+      : T.setupProblem && !open.length ? `<div class="banner bad">⚙️ ${esc(T.setupProblem)}</div>`
+      : T.final === 'safe' ? `<div class="banner">Works now: ${esc(tlist(T.safe))} (${esc(T.runs.safe.summary)}). ${esc(tlist(waiting))} ${waiting.length === 1 ? 'waits' : 'wait'}: fix ${open.length === 1 ? 'the bug' : 'the bugs'} below and ${waiting.length === 1 ? 'they join' : 'they join'} automatically.</div>`
+      : open.length ? `<div class="banner bad">${open.length} bug${open.length === 1 ? ' is' : 's are'} still open, and no group works together yet. Fix ${open.length === 1 ? 'it' : 'them'} below.</div>`
+      : `<div class="banner">Ready: ${esc(tlist(T.included))} merged${T.runs.full ? ` and ${T.checksOnly ? 'it compiles' : 'checked (' + esc(T.runs.full.summary) + ')'}` : ' (not checked)'}.${waiting.length ? ` ${esc(tlist(waiting))} ${waiting.length === 1 ? 'waits' : 'wait'} (real conflict above).` : ''}</div>`;
+    html += `<section class="card"><h2><span class="num">3</span>Final code</h2>${banner}
+      <div class="final">${T.final === 'safe' ? `<button class="btn primary" data-dl="safe">Download what works now (.zip)</button><button class="btn" data-dl="full">Download everyone merged${open.length ? ' (with open bugs)' : ''}</button>` : `<button class="btn primary" data-dl="full">Download final code (.zip)</button>`}${T.source === 'workspace' ? '' : `<button class="btn" id="tSave"${T.busy ? ' disabled' : ''}>Save as merge branch</button>`}<button class="btn" id="tRetest"${T.busy ? ' disabled' : ''}>Check again</button></div>
+      ${T.mergeBranch ? `<div class="saved"><span>Saved ${esc(tlist(T.mergeBranch.keys))} as <b>${esc(T.mergeBranch.name)}</b> (${esc(T.mergeBranch.commit)}).</span><span>Next: <code>${esc(T.mergeBranch.push)}</code></span></div>` : ''}<p class="err" id="saveErr"></p>
+      <h3 style="margin:8px 0 0;font:700 16px var(--f-display)">Look at it or change it</h3>
+      <p class="note">This is everyone merged together (${esc(tlist(T.together))}). Every save checks it again; when it works, the waiting developers join. Lines are coloured by who wrote them.</p>
+      <div class="row"><label class="f grow">File<select id="edFile">${T.mergedFiles.slice(0, 3000).map(f => `<option${f === editor.file ? ' selected' : ''}>${esc(f)}</option>`).join('')}</select></label><button class="btn" id="edShow">Show who wrote what</button></div>
+      <div class="legend">${T.devs.map(d => `<span><i style="background:${(DEV[d.key] || '').match(/--dev: ([^;]+);/) ? (DEV[d.key].match(/--dev: ([^;]+);/)[1]) : 'var(--muted)'}"></i>${esc(d.name)}</span>`).join('')}<span><i style="background:var(--pass)"></i>More than one</span><span>Uncoloured: it was already there.</span></div>
+      <div id="edArea" class="editor"></div></section>`;
+  }
+  el.innerHTML = html;
+  if ($('edFile')) {
+    $('edFile').onchange = () => { editor = { file: $('edFile').value, dirty: false }; loadFile(); };
+    $('edShow').onclick = () => loadFile(true);
+    if (!editor.file || !T.mergedFiles.includes(editor.file)) editor.file = (open.find(b => b.file) || {}).file || T.mergedFiles[0];
+    $('edFile').value = editor.file;
+    if (keepEditor && keepEditor.file === editor.file) showEditor(keepEditor.text, true); else loadFile();
+  }
+  el.querySelectorAll('[data-tres]').forEach(b => { b.onclick = () => { b.disabled = true; post('api/team/resolve', { developer: b.dataset.k, file: b.dataset.file, label: b.dataset.label, pick: b.dataset.tres }).then(showErr); }; });
+  el.querySelectorAll('[data-tai]').forEach(b => { b.onclick = () => { b.disabled = true; post('api/team/ai', { developer: b.dataset.k, file: b.dataset.file, label: b.dataset.label }).then(showErr); }; });
+  el.querySelectorAll('[data-tccopy]').forEach(b => { b.onclick = () => copyForClaude(T.bugs.find(x => x.id === +b.dataset.tccopy) || { id: +b.dataset.tccopy }, true, b); });
+  el.querySelectorAll('[data-tfix]').forEach(b => { b.onclick = () => { b.disabled = true; post('api/team/fix', { bug: +b.dataset.tfix }).then(showErr); }; });
+  el.querySelectorAll('[data-edit]').forEach(b => { b.onclick = () => { editor = { file: b.dataset.edit, dirty: false, line: +b.dataset.line || null }; $('edFile').value = editor.file; loadFile(); $('edArea').scrollIntoView({ behavior: 'smooth', block: 'center' }); }; });
+  el.querySelectorAll('[data-dl]').forEach(b => { b.onclick = () => download('final.zip?which=' + b.dataset.dl); });
+  if ($('tFixAll')) $('tFixAll').onclick = () => { $('tFixAll').disabled = true; post('api/team/fix_all').then(showErr); };
+  if ($('tRetest')) $('tRetest').onclick = () => post('api/team/retest').then(r => { if (r.error) $('saveErr').textContent = r.error; });
+  if ($('tSave')) $('tSave').onclick = async () => { $('saveErr').textContent = ''; const r = await post('api/team/branch'); if (r.error) $('saveErr').textContent = r.error; };
+}
+async function download(url) {
+  const r = await fetch(url);
+  if (!r.ok) { if ($('saveErr')) $('saveErr').textContent = await r.text(); return; }
+  const blob = await r.blob(), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = ((r.headers.get('content-disposition') || '').match(/filename="([^"]+)"/) || [, 'final-code.zip'])[1]; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function loadFile(authorsView) {
+  if (!editor.file) { $('edArea').innerHTML = ''; return; }
+  const r = await post(EP() + '/read', { file: editor.file });
+  if (r.error) { $('edArea').innerHTML = `<p class="err">${esc(r.error)}</p>`; return; }
+  if (authorsView) {
+    const lines = r.content.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+    $('edArea').innerHTML = `<pre class="authors">${lines.slice(0, 20000).map((l, i) => (r.authorKeys ? (r.authorKeys[i] && r.authorKeys[i].length === 1 ? `<span class="ln dev" ${DEV[r.authorKeys[i][0]] || ''}>${esc(l) || ' '}</span>` : `<span class="ln ${r.authorKeys[i] && r.authorKeys[i].length ? 'both' : ''}">${esc(l) || ' '}</span>`) : `<span class="ln ${(r.authors && r.authors[i]) || ''}">${esc(l) || ' '}</span>`)).join('')}</pre>${lines.length > 20000 ? `<p class="note">Showing the first 20,000 of ${lines.length} lines.</p>` : ''}<div class="acts"><button class="btn small" id="edBack">Edit</button></div>`;
+    $('edBack').onclick = () => showEditor(r.content);
+    return;
+  }
+  showEditor(r.content);
+}
+function showEditor(text, dirty) {
+  $('edArea').innerHTML = `<textarea class="code" id="edText" spellcheck="false" aria-label="Edit ${esc(editor.file)}"></textarea><div class="acts"><button class="btn primary" id="edSave">Save · check again</button><span class="muted">Ctrl+S saves</span><span class="err" id="edErr"></span></div>`;
+  const ta = $('edText'); ta.value = text; editor.dirty = !!dirty;
+  ta.oninput = () => { editor.dirty = true; };
+  ta.onkeydown = (e) => { if (e.key === 'Tab') { e.preventDefault(); ta.setRangeText('    ', ta.selectionStart, ta.selectionEnd, 'end'); editor.dirty = true; } if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } };
+  if (editor.line) { const pos = text.split('\n').slice(0, editor.line - 1).join('\n').length + 1; ta.focus(); ta.setSelectionRange(pos, pos); ta.scrollTop = Math.max(0, (editor.line - 6) * 20); editor.line = null; }
+  $('edSave').onclick = save;
+  async function save() { $('edSave').disabled = true; const r = await post(EP() + '/write', { file: editor.file, content: ta.value, by: 'You (on the Tandemi page)' }); editor.dirty = false; if (r.error) { $('edErr').textContent = r.error; $('edSave').disabled = false; } }
+}
+
+function keybar() {
+  const admin = !SET || SET.owner, t = typeof here === 'function' ? here() : null, whose = t && !t.personal ? 'this team' : 'your Personal space';
+  const cc = AIK.claudeCode || {};
+  $('keybar').innerHTML = cc.using
+    ? `${ic('claude', 'lg')}<span>Claude is connected through <b>Claude Code</b> (your Claude subscription, ${esc(AIK.model || '')}). The agents can fix bugs on their own.</span>`
+    : AIK.hasKey
+    ? `${ic('claude', 'lg')}<span>Claude is connected for ${whose} with an API key (${esc(AIK.model || '')}). The agents can fix bugs and combine conflicts.</span>${admin ? '<button class="btn small" id="keyClear">Remove key</button>' : ''}`
+    : admin ? `${ic('claude', 'lg off')}<span>For the agents to fix bugs on their own, install <b>Claude Code</b> once and sign in with your Claude account (no API key needed): <code>npm install -g @anthropic-ai/claude-code</code>, then type <code>claude</code>.</span><button class="btn small" id="ccCheck">I did it, check again</button><details class="keyalt"><summary>Or use an API key</summary><input id="keyIn" type="password" placeholder="sk-ant-…" autocomplete="off" aria-label="Anthropic API key"><button class="btn small primary" id="keySave">Save</button></details><span class="err" id="keyErr"></span>`
+    : `${ic('claude', 'lg off')}<span>The agents can't fix bugs on their own yet. Ask the team's owner to connect Claude (Claude Code or an API key), or use “Copy for Claude” on a bug.</span>`;
+  if ($('keyClear')) $('keyClear').onclick = () => post('api/key/clear');
+  if ($('keySave')) $('keySave').onclick = async () => { const r = await post('api/key', { key: $('keyIn').value }); if (r.error) $('keyErr').textContent = r.error; };
+  if ($('ccCheck')) $('ccCheck').onclick = async () => { $('ccCheck').disabled = true; $('ccCheck').textContent = 'Looking…'; const r = await post('api/ai/check', {}); AIK = r.error ? AIK : r; keybar(); if (!AIK.ready && $('keyErr')) $('keyErr').textContent = "Tandemi can't find Claude Code yet. After installing, close and open start.bat again."; };
+}
+// a bug as a message for Claude Desktop (or any AI coder connected over the MCP): paste it there and Claude fixes it through Tandemi
+function copyForClaude(bug, team, btn) {
+  const t = here(), where = t && !t.personal ? ` in the "${t.name}" team` : '';
+  const text = `Use Tandemi${where}: fix bug ${bug.id} in the ${team ? 'team merge' : 'open project'} ("${bug.title || bug.summary || ''}"${bug.file ? `, ${bug.file}${bug.line ? ':' + bug.line : ''}` : ''}). Read the bug with ${team ? 'team_status' : 'project_status'}, fix it with ${team ? 'team_fix_bug or team_write_file' : 'project_fix_bug or project_write_file'}, then run the checks again and tell me if it's gone.`;
+  const done = () => { btn.innerHTML = ic('claude') + 'Copied: paste it in Claude'; setTimeout(() => { btn.innerHTML = ic('claude') + 'Copy for Claude'; }, 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(done, () => { prompt('Copy this and paste it in Claude Desktop:', text); });
+}
+const ICON = {"C#": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjg1Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9IlNWR2Zud2pmZWNpIiB4MT0iMTcuNDIlIiB4Mj0iNTYuNTE2JSIgeTE9IjIxLjg2JSIgeTI9Ijk3LjQzNyUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiM5MjdiZTUiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM1MTJiZDQiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI1NWR2Zud2pmZWNpKSIgZD0iTTAgODkuMzU1djEwNS41NzZjMCAxMy4wNiA2Ljk2NyAyNS4xNCAxOC4yODYgMzEuNjY2bDkxLjQyOSA1Mi43OTRhMzYuNTYgMzYuNTYgMCAwIDAgMzYuNTcxIDBsOTEuNDI5LTUyLjc5NEEzNi41NiAzNi41NiAwIDAgMCAyNTYgMTk0LjkzVjg5LjM1NmEzNi41NiAzNi41NiAwIDAgMC0xOC4yODUtMzEuNjcybC05MS40My01Mi43OGEzNi41NSAzNi41NSAwIDAgMC0zNi41NyAwbC05MS40MyA1Mi43OEEzNi41NyAzNi41NyAwIDAgMCAwIDg5LjM1NiIvPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik02NC4wMDMgMTIzLjg3MnYzNi41NzVhOS4xMyA5LjEzIDAgMCAwIDkuMTQ1IDkuMTQ1YTkuMTQgOS4xNCAwIDAgMCA5LjE0NS05LjE0NWE5LjE0MiA5LjE0MiAwIDEgMSAxOC4yODUgMGMwIDE1LjE0OS0xMi4yOCAyNy40My0yNy40MyAyNy40M3MtMjcuNDMtMTIuMjgxLTI3LjQzLTI3LjQzdi0zNi41N2MwLTE1LjE1IDEyLjI4LTI3LjQzIDI3LjQzLTI3LjQzczI3LjQzIDEyLjI4IDI3LjQzIDI3LjQzYTkuMTQyIDkuMTQyIDAgMCAxLTE4LjI4NSAwYTkuMTQyIDkuMTQyIDAgMSAwLTE4LjI4NSAwem0xNDYuMjkgMzYuNTc1YTkuMTM0IDkuMTM0IDAgMCAxLTkuMTQ2IDkuMTQ1aC05LjE0NXY5LjE0YzAgMi40MjctLjk2IDQuNzUzLTIuNjc4IDYuNDY2YTkuMTI0IDkuMTI0IDAgMCAxLTEyLjkyOCAwYTkuMTcgOS4xNyAwIDAgMS0yLjY3OS02LjQ2N3YtOS4xNGgtMTguMjg0djkuMTRhOS4xMjQgOS4xMjQgMCAwIDEtOS4xNDYgOS4xNDZhOS4xMjQgOS4xMjQgMCAwIDEtOS4xNC05LjE0NnYtOS4xNGgtOS4xNWE5LjE0MiA5LjE0MiAwIDAgMSAwLTE4LjI4NGg5LjE0NXYtMTguMjg1aC05LjE0NWE5LjE0MiA5LjE0MiAwIDAgMSAwLTE4LjI4NWg5LjE0NXYtOS4xNDVhOS4xNDIgOS4xNDIgMCAwIDEgMTguMjg1IDB2OS4xNGgxOC4yODV2LTkuMTRhOS4xNDIgOS4xNDIgMCAwIDEgMTguMjg1IDB2OS4xNGg5LjE0NWE5LjEyIDkuMTIgMCAwIDEgNi40NjEgMi42NzhhOS4xMjQgOS4xMjQgMCAwIDEgMCAxMi45MjhhOS4xMyA5LjEzIDAgMCAxLTYuNDYgMi42ODRoLTkuMTQ2djE4LjI4NWg5LjE0NWE5LjE2NiA5LjE2NiAwIDAgMSA5LjE0NSA5LjE0em0tMzYuNTc2LTI3LjQyNWgtMTguMjg0djE4LjI4NWgxOC4yODR6Ii8+PC9zdmc+", "Java": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMzQ2Ij48cGF0aCBmaWxsPSIjNTM4MmExIiBkPSJNODIuNTU0IDI2Ny40NzNzLTEzLjE5OCA3LjY3NSA5LjM5MyAxMC4yNzJjMjcuMzY5IDMuMTIyIDQxLjM1NiAyLjY3NSA3MS41MTctMy4wMzRjMCAwIDcuOTMgNC45NzIgMTkuMDAzIDkuMjc5Yy02Ny42MTEgMjguOTc3LTE1My4wMTktMS42NzktOTkuOTEzLTE2LjUxN20tOC4yNjItMzcuODE0cy0xNC44MDMgMTAuOTU4IDcuODA1IDEzLjI5NmMyOS4yMzYgMy4wMTYgNTIuMzI0IDMuMjYzIDkyLjI3Ni00LjQzYzAgMCA1LjUyNiA1LjYwMiAxNC4yMTUgOC42NjZjLTgxLjc0NyAyMy45MDQtMTcyLjc5OCAxLjg4NS0xMTQuMjk2LTE3LjUzMiIvPjxwYXRoIGZpbGw9IiNlNzZmMDAiIGQ9Ik0xNDMuOTQyIDE2NS41MTVjMTYuNjYgMTkuMTgtNC4zNzcgMzYuNDQtNC4zNzcgMzYuNDRzNDIuMzAxLTIxLjgzNyAyMi44NzQtNDkuMTgzYy0xOC4xNDQtMjUuNS0zMi4wNTktMzguMTcyIDQzLjI2OC04MS44NThjMCAwLTExOC4yMzggMjkuNTMtNjEuNzY1IDk0LjYiLz48cGF0aCBmaWxsPSIjNTM4MmExIiBkPSJNMjMzLjM2NCAyOTUuNDQyczkuNzY3IDguMDQ3LTEwLjc1NyAxNC4yNzNjLTM5LjAyNiAxMS44MjMtMTYyLjQzMiAxNS4zOTMtMTk2LjcxNC40NzFjLTEyLjMyMy01LjM2IDEwLjc4Ny0xMi44IDE4LjA1Ni0xNC4zNjJjNy41ODEtMS42NDQgMTEuOTE0LTEuMzM3IDExLjkxNC0xLjMzN2MtMTMuNzA1LTkuNjU1LTg4LjU4MyAxOC45NTctMzguMDM0IDI3LjE1YzEzNy44NTMgMjIuMzU2IDI1MS4yOTItMTAuMDY2IDIxNS41MzUtMjYuMTk1TTg4LjkgMTkwLjQ4cy02Mi43NzEgMTQuOTEtMjIuMjI4IDIwLjMyM2MxNy4xMTggMi4yOTIgNTEuMjQzIDEuNzc0IDgzLjAzLS44OWMyNS45NzgtMi4xOSA1Mi4wNjMtNi44NSA1Mi4wNjMtNi44NXMtOS4xNiAzLjkyMy0xNS43ODcgOC40NDhjLTYzLjc0NCAxNi43NjUtMTg2Ljg4NiA4Ljk2Ni0xNTEuNDM1LTguMTgzYzI5Ljk4MS0xNC40OTIgNTQuMzU4LTEyLjg0OCA1NC4zNTgtMTIuODQ4bTExMi42MDUgNjIuOTQyYzY0LjgtMzMuNjcyIDM0LjgzOS02Ni4wMyAxMy45MjctNjEuNjdjLTUuMTI2IDEuMDY2LTcuNDExIDEuOTktNy40MTEgMS45OXMxLjkwMy0yLjk4IDUuNTM3LTQuMjdjNDEuMzctMTQuNTQ1IDczLjE4NyA0Mi44OTctMTMuMzU1IDY1LjY0N2MwIC4wMDEgMS4wMDMtLjg5NSAxLjMwMi0xLjY5NyIvPjxwYXRoIGZpbGw9IiNlNzZmMDAiIGQ9Ik0xNjIuNDM5LjM3MXMzNS44ODcgMzUuOS0zNC4wMzcgOTEuMTAxYy01Ni4wNzEgNDQuMjgyLTEyLjc4NiA2OS41My0uMDIzIDk4LjM3N2MtMzIuNzMtMjkuNTMtNTYuNzUtNTUuNTI2LTQwLjYzNS03OS43MkMxMTEuMzk1IDc0LjYxMiAxNzYuOTE4IDU3LjM5MyAxNjIuNDM5LjM3Ii8+PHBhdGggZmlsbD0iIzUzODJhMSIgZD0iTTk1LjI2OCAzNDQuNjY1YzYyLjE5OSAzLjk4MiAxNTcuNzEyLTIuMjA5IDE1OS45NzQtMzEuNjRjMCAwLTQuMzQ4IDExLjE1OC01MS40MDQgMjAuMDE4Yy01My4wODggOS45OS0xMTguNTY0IDguODI0LTE1Ny4zOTkgMi40MjFjLjAwMSAwIDcuOTUgNi41OCA0OC44MyA5LjIwMSIvPjwvc3ZnPg==", "Python": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU1Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9IlNWR2czOVdsZWVQIiB4MT0iMTIuOTU5JSIgeDI9Ijc5LjYzOSUiIHkxPSIxMi4wMzklIiB5Mj0iNzguMjAxJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzM4N2ViOCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzM2Njk5NCIvPjwvbGluZWFyR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJTVkdsWG9Sa2M0VCIgeDE9IjE5LjEyOCUiIHgyPSI5MC43NDIlIiB5MT0iMjAuNTc5JSIgeTI9Ijg4LjQyOSUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZmUwNTIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmZmMzMzEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI1NWR2czOVdsZWVQKSIgZD0iTTEyNi45MTYuMDcyYy02NC44MzIgMC02MC43ODQgMjguMTE1LTYwLjc4NCAyOC4xMTVsLjA3MiAyOS4xMjhoNjEuODY4djguNzQ1SDQxLjYzMVMuMTQ1IDYxLjM1NS4xNDUgMTI2Ljc3YzAgNjUuNDE3IDM2LjIxIDYzLjA5NyAzNi4yMSA2My4wOTdoMjEuNjF2LTMwLjM1NnMtMS4xNjUtMzYuMjEgMzUuNjMyLTM2LjIxaDYxLjM2MnMzNC40NzUuNTU3IDM0LjQ3NS0zMy4zMTlWMzMuOTdTMTk0LjY3LjA3MiAxMjYuOTE2LjA3Mk05Mi44MDIgMTkuNjZhMTEuMTIgMTEuMTIgMCAwIDEgMTEuMTMgMTEuMTNhMTEuMTIgMTEuMTIgMCAwIDEtMTEuMTMgMTEuMTNhMTEuMTIgMTEuMTIgMCAwIDEtMTEuMTMtMTEuMTNhMTEuMTIgMTEuMTIgMCAwIDEgMTEuMTMtMTEuMTMiLz48cGF0aCBmaWxsPSJ1cmwoI1NWR2xYb1JrYzRUKSIgZD0iTTEyOC43NTcgMjU0LjEyNmM2NC44MzIgMCA2MC43ODQtMjguMTE1IDYwLjc4NC0yOC4xMTVsLS4wNzItMjkuMTI3SDEyNy42di04Ljc0NWg4Ni40NDFzNDEuNDg2IDQuNzA1IDQxLjQ4Ni02MC43MTJjMC02NS40MTYtMzYuMjEtNjMuMDk2LTM2LjIxLTYzLjA5NmgtMjEuNjF2MzAuMzU1czEuMTY1IDM2LjIxLTM1LjYzMiAzNi4yMWgtNjEuMzYycy0zNC40NzUtLjU1Ny0zNC40NzUgMzMuMzJ2NTYuMDEzcy01LjIzNSAzMy44OTcgNjIuNTE4IDMzLjg5N20zNC4xMTQtMTkuNTg2YTExLjEyIDExLjEyIDAgMCAxLTExLjEzLTExLjEzYTExLjEyIDExLjEyIDAgMCAxIDExLjEzLTExLjEzMWExMS4xMiAxMS4xMiAwIDAgMSAxMS4xMyAxMS4xM2ExMS4xMiAxMS4xMiAwIDAgMS0xMS4xMyAxMS4xMyIvPjwvc3ZnPg==", "Go": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgMTkyIj48cGF0aCBmaWxsPSIjMDBhY2Q3IiBkPSJtMjkyLjUzMyAxMy4yOTVsMS4xMjQuNzVjMTMuMjEyIDguNzI1IDIyLjY4NSAyMC42OTEgMjguOTE3IDM1LjE1YzEuNDk2IDIuMjQzLjQ5OSAzLjQ5LTIuNDkzIDQuMjM3bC01LjA2MyAxLjI5NmMtMTEuNDQ3IDIuOTQ5LTIwLjUzIDUuNDI5LTMxLjgyNyA4LjM3OGwtNi40NDMgMS42NzhjLTIuMzIuNTc0LTIuOTYuMzMzLTUuNDI4LTIuNDc3bC0uMzQ4LS4zOTljLTMuNTE5LTMuOTg4LTYuMTU1LTYuNjUyLTEwLjgxNy05LjAzbC0uODk5LS40NDNjLTE1LjcwNS03LjcyNy0zMC45MTEtNS40ODQtNDUuMTIgMy43NGMtMTYuOTUyIDEwLjk2OC0yNS42NzcgMjcuMTcyLTI1LjQyOCA0Ny4zNjRjLjI1IDE5Ljk0MiAxMy45NiAzNi4zOTUgMzMuNjU0IDM5LjEzN2MxNi45NTEgMi4yNDQgMzEuMTYtMy43MzkgNDIuMzc4LTE2LjQ1MmMyLjI0NC0yLjc0MyA0LjIzOC01LjczNCA2LjczLTkuMjI0aC00OC4xMWMtNS4yMzUgMC02LjQ4MS0zLjI0LTQuNzM2LTcuNDc4bC44NjQtMi4wMzVjMy4yMDQtNy40NTQgOC4xNzMtMTguMTY4IDExLjQtMjQuMjk0bC43MDQtMS4zMTljLjg2Mi0xLjQ5NCAyLjYxMi0zLjUxMyA1Ljk3Ny0zLjUxM2g4MC4yMjRjMy42MDMtMTEuNDE1IDkuNDQ5LTIyLjIwMSAxNy4yNDYtMzIuNDA3YzE4LjE5OC0yMy45MzEgNDAuMTM1LTM2LjM5NiA2OS44LTQxLjYzYzI1LjQyNy00LjQ4OCA0OS4zNTktMS45OTUgNzEuMDQ2IDEyLjcxM2MxOS42OTQgMTMuNDYxIDMxLjkwOSAzMS42NiAzNS4xNSA1NS41OWM0LjIzNyAzMy42NTQtNS40ODUgNjEuMDc1LTI4LjY2OCA4NC41MDhjLTE2LjQ1MyAxNi43MDItMzYuNjQ1IDI3LjE3Mi01OS44MjkgMzEuOTA4Yy02LjczIDEuMjQ3LTEzLjQ2MSAxLjQ5Ni0xOS45NDIgMi4yNDRjLTIyLjY4NS0uNDk5LTQzLjM3Ni02Ljk4LTYwLjgyNi0yMS45MzdjLTEyLjI3My0xMC42MS0yMC43MjctMjMuNjQ4LTI0LjkyOC0zOC44MjhhMTA1IDEwNSAwIDAgMS0xMC40NyAxNi44OWMtMTcuOTQ5IDIzLjY4My00MS4zODEgMzguMzktNzEuMDQ2IDQyLjM4Yy0yNC40MyAzLjI0LTQ3LjExNS0xLjQ5Ny02Ny4wNTgtMTYuNDU0Yy0xOC40NDctMTMuOTYtMjguOTE3LTMyLjQwNy0zMS42Ni01NS4zNGMtMy4yNC0yNy4xNzMgNC43MzctNTEuNjAzIDIxLjE5LTczLjA0MWMxNy43LTIzLjE4NCA0MS4xMzItMzcuODkxIDY5LjgtNDMuMTI2YzIyLjk5OS00LjE2IDQ1LjAzNy0xLjU5NSA2NC45MzYgMTEuNDY0TTQxMS4xMiA0OS4wMTdsLS43OTguMTc4Yy0yMy4xODMgNS4yMzUtMzguMTQgMTkuOTQyLTQzLjYyNCA0My4zNzVjLTQuNDg4IDE5LjQ0NCA0Ljk4NSAzOS4xMzggMjIuOTM0IDQ3LjExNWMxMy43MSA1Ljk4MyAyNy40MjEgNS4yMzUgNDAuNjMzLTEuNDk2YzE5LjY5NC0xMC4yMiAzMC40MTMtMjYuMTc1IDMxLjY2LTQ3LjYxM2MtLjI1LTMuMjQtLjI1LTUuNzM0LS43NDktOC4yMjdjLTQuNDM2LTI0LjQwMS0yNi42NjQtMzguMzI0LTUwLjA1Ni0zMy4zMzJNMTE2LjQxNiA5NC41NjRjLjk5NyAwIDEuNDk2Ljc0OCAxLjQ5NiAxLjc0NWwtLjQ5OSA1Ljk4M2MwIC45OTctLjk5NyAxLjc0NS0xLjc0NSAxLjc0NWwtNTQuMzQ0LS4yNDljLS45OTcgMC0xLjI0Ni0uNzQ4LS43NDgtMS40OTZsMy40OS02LjIzMmMuNDk5LS43NDggMS40OTYtMS40OTYgMi40OTMtMS40OTZ6TTEyMS45IDcxLjYzYy45OTcgMCAxLjQ5Ni43NDggMS4yNDcgMS40OTZsLTEuOTk1IDUuOTgzYy0uMjQ5Ljk5Ny0xLjI0NiAxLjQ5NS0yLjI0MyAxLjQ5NWwtMTE3LjkxMi4yNWMtLjk5NyAwLTEuMjQ2LS40OTktLjc0OC0xLjI0N2w1LjIzNS02LjczYy40OTktLjc0OCAxLjc0NS0xLjI0NyAyLjc0Mi0xLjI0N3ptMTIuOTYzLTIyLjkzNGMuOTk3IDAgMS4yNDYuNzQ4Ljc0OCAxLjQ5NmwtNC4yMzggNi40ODFjLS40OTkuNzQ4LTEuNzQ1IDEuNDk2LTIuNDkzIDEuNDk2bC05MC4yNC0uMjVjLS45OTggMC0xLjI0Ny0uNDk4LS43NDktMS4yNDZsNS4yMzUtNi43M2MuNDk5LS43NDggMS43NDUtMS4yNDcgMi43NDItMS4yNDd6Ii8+PC9zdmc+", "TypeScript": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBmaWxsPSIjMzE3OGM2IiBkPSJNMjAgMGgyMTZjMTEuMDQ2IDAgMjAgOC45NTQgMjAgMjB2MjE2YzAgMTEuMDQ2LTguOTU0IDIwLTIwIDIwSDIwYy0xMS4wNDYgMC0yMC04Ljk1NC0yMC0yMFYyMEMwIDguOTU0IDguOTU0IDAgMjAgMCIvPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0xNTAuNTE4IDIwMC40NzV2MjcuNjJxNi43MzggMy40NTMgMTUuOTM4IDUuMTc5VDE4NS44NDkgMjM1cTkuOTM0IDAgMTguODc0LTEuODk5dDE1LjY3OC02LjI1N3E2LjczOC00LjM1OSAxMC42NjktMTEuMzk0cTMuOTMtNy4wMzMgMy45My0xNy4zOTFxMC03LjUxLTIuMjQ2LTEzLjE2M2EzMC44IDMwLjggMCAwIDAtNi40NzktMTAuMDU1cS00LjIzMi00LjQwMi0xMC4xNDktNy44OTh0LTEzLjM0Ny02LjYwMnEtNS40NDItMi4yNDUtOS43NjEtNC4zNTl0LTcuMzQyLTQuMzE2cS0zLjAyNC0yLjItNC42NjUtNC42NjF0LTEuNjQxLTUuNTY3cTAtMi44NDggMS40NjgtNS4xMzVxMS40NjktMi4yODggNC4xNDctMy45Mjd0Ni41NjUtMi41NDdxMy44ODctLjkwNiA4LjYzOC0uOTA2cTMuNDU2IDAgNy4yOTkuNTE4cTMuODQ0LjUxNyA3LjczMiAxLjU5N2E1NCA1NCAwIDAgMSA3LjU1OCAyLjcxOWE0MS43IDQxLjcgMCAwIDEgNi43ODEgMy43OTd2LTI1LjgwN3EtNi4zMDYtMi40MTctMTMuNzc4LTMuNTgyVDE5OC42MzMgMTA3cS05Ljg0NyAwLTE4LjY1OCAyLjExNXEtOC44MTEgMi4xMTQtMTUuNTA2IDYuNjAycS02LjY5NCA0LjQ5LTEwLjU4MiAxMS40MzdRMTUwIDEzNC4xMDIgMTUwIDE0My43NjlxMCAxMi4zNDIgNy4xMjcgMjEuMDZ0MjEuNjM4IDE0Ljc1OWEyOTIgMjkyIDAgMCAxIDEwLjYyNSA0LjU3NXE0LjkyNCAyLjI0NCA4LjUwOSA0LjY2dDUuNjU4IDUuMjY1dDIuMDczIDYuNDc0YTkuOSA5LjkgMCAwIDEtMS4yOTYgNC45NjNxLTEuMjk1IDIuMjg3LTMuOTMgMy45N3QtNi41NjUgMi42MzJ0LTkuMi45NXEtOC45ODMgMC0xNy43OTQtMy4xNTF0LTE2LjMyNy05LjQ1MW0tNDYuMDM2LTY4LjczM0gxNDBWMTA5SDQxdjIyLjc0MmgzNS4zNDVWMjMzaDI4LjEzN3oiLz48L3N2Zz4=", "JavaScript": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBmaWxsPSIjZjdkZjFlIiBkPSJNMCAwaDI1NnYyNTZIMHoiLz48cGF0aCBkPSJtNjcuMzEyIDIxMy45MzJsMTkuNTktMTEuODU2YzMuNzggNi43MDEgNy4yMTggMTIuMzcxIDE1LjQ2NSAxMi4zNzFjNy45MDUgMCAxMi44OS0zLjA5MiAxMi44OS0xNS4xMnYtODEuNzk4aDI0LjA1N3Y4Mi4xMzhjMCAyNC45MTctMTQuNjA2IDM2LjI1OS0zNS45MTYgMzYuMjU5Yy0xOS4yNDUgMC0zMC40MTYtOS45NjctMzYuMDg3LTIxLjk5Nm04NS4wNy0yLjU3NmwxOS41ODgtMTEuMzQxYzUuMTU3IDguNDIxIDExLjg1OSAxNC42MDcgMjMuNzE1IDE0LjYwN2M5Ljk2OSAwIDE2LjMyNS00Ljk4NCAxNi4zMjUtMTEuODU4YzAtOC4yNDgtNi41My0xMS4xNy0xNy41MjgtMTUuOThsLTYuMDEzLTIuNThjLTE3LjM1Ny03LjM4Ny0yOC44Ny0xNi42NjctMjguODctMzYuMjU3YzAtMTguMDQ0IDEzLjc0Ny0zMS43OTIgMzUuMjI4LTMxLjc5MmMxNS4yOTQgMCAyNi4yOTIgNS4zMjggMzQuMTk2IDE5LjI0N2wtMTguNzMyIDEyLjAzYy00LjEyNS03LjM4OS04LjU5MS0xMC4zMS0xNS40NjUtMTAuMzFjLTcuMDQ2IDAtMTEuNTE0IDQuNDY4LTExLjUxNCAxMC4zMWMwIDcuMjE3IDQuNDY4IDEwLjE0IDE0Ljc3OCAxNC42MDhsNi4wMTQgMi41NzdjMjAuNDUgOC43NjUgMzEuOTYzIDE3LjcgMzEuOTYzIDM3LjgwNGMwIDIxLjY1NC0xNy4wMTIgMzMuNTEtMzkuODY3IDMzLjUxYy0yMi4zMzkgMC0zNi43NzQtMTAuNjU0LTQzLjgxOS0yNC41NzQiLz48L3N2Zz4=", "C++": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjg4Ij48cGF0aCBmaWxsPSIjNjQ5YWQyIiBkPSJNMjU1Ljk4NyA4NC41OWMtLjAwMi00LjgzNy0xLjAzNy05LjExMi0zLjEzLTEyLjc4MWMtMi4wNTQtMy42MDgtNS4xMzMtNi42MzItOS4yNjEtOS4wMjNjLTM0LjA4LTE5LjY1MS02OC4xOTUtMzkuMjQyLTEwMi4yNjQtNTguOTEzYy05LjE4NS01LjMwMy0xOC4wOS01LjExLTI3LjIwOC4yN2MtMTMuNTY1IDgtODEuNDggNDYuOTEtMTAxLjcxOSA1OC42MzJDNC4wNzEgNjcuNi4wMTUgNzQuOTg0LjAxMyA4NC41OEMwIDEyNC4xMDEuMDEzIDE2My42MiAwIDIwMy4xNDFjMCA0LjczLjk5MyA4LjkyMyAyLjk5MyAxMi41MzdjMi4wNTYgMy43MTcgNS4xNzcgNi44MjQgOS40MDEgOS4yNjljMjAuMjQgMTEuNzIyIDg4LjE2NCA1MC42MyAxMDEuNzI2IDU4LjYzMWM5LjEyMSA1LjM4MiAxOC4wMjcgNS41NzUgMjcuMjE1LjI3YzM0LjA3LTE5LjY3MiA2OC4xODYtMzkuMjYyIDEwMi4yNzItNTguOTEzYzQuMjI0LTIuNDQ0IDcuMzQ1LTUuNTUzIDkuNDAxLTkuMjY3YzEuOTk3LTMuNjE0IDIuOTkyLTcuODA2IDIuOTkyLTEyLjUzOWMwIDAgMC03OS4wMTgtLjAxMy0xMTguNTM5Ii8+PHBhdGggZmlsbD0iIzAwNDQ4MiIgZD0ibTEyOC4zOTIgMTQzLjQ3NmwtMTI1LjQgNzIuMjAyYzIuMDU3IDMuNzE3IDUuMTc4IDYuODI0IDkuNDAyIDkuMjY5YzIwLjI0IDExLjcyMiA4OC4xNjQgNTAuNjMgMTAxLjcyNiA1OC42MzFjOS4xMjEgNS4zODIgMTguMDI3IDUuNTc1IDI3LjIxNS4yN2MzNC4wNy0xOS42NzIgNjguMTg2LTM5LjI2MiAxMDIuMjcyLTU4LjkxM2M0LjIyNC0yLjQ0NCA3LjM0NS01LjU1MyA5LjQwMS05LjI2N3oiLz48cGF0aCBmaWxsPSIjMWE0Njc0IiBkPSJNOTEuMjUgMTY0Ljg2M2M3LjI5NyAxMi43MzggMjEuMDE0IDIxLjMzIDM2Ljc1IDIxLjMzYzE1LjgzMyAwIDI5LjYyOC04LjcgMzYuODg4LTIxLjU3NmwtMzYuNDk2LTIxLjE0MXoiLz48cGF0aCBmaWxsPSIjMDE1ODljIiBkPSJNMjU1Ljk4NyA4NC41OWMtLjAwMi00LjgzNy0xLjAzNy05LjExMi0zLjEzLTEyLjc4MWwtMTI0LjQ2NSA3MS42NjdsMTI0LjYxNiA3Mi4xOTJjMS45OTctMy42MTQgMi45OS03LjgwNiAyLjk5Mi0xMi41MzljMCAwIDAtNzkuMDE4LS4wMTMtMTE4LjUzOSIvPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0yNDkuMTM1IDE0OC42MzZoLTkuNzM4djkuNzRoLTkuNzR2LTkuNzRoLTkuNzM3VjEzOC45aDkuNzM3di05LjczOGg5Ljc0djkuNzM4aDkuNzM4ek0xMjggNTguODQ3YzMxLjEzNSAwIDU4LjM1OCAxNi43NCA3My4xNyA0MS43MDlsLjQ0NC43NTlsLTM3LjAwMSAyMS4zMDdjLTcuMzMzLTEyLjYwOS0yMC45NzgtMjEuMDk0LTM2LjYxMy0yMS4wOTRjLTIzLjM4IDAtNDIuMzMzIDE4Ljk1My00Mi4zMzMgNDIuMzMyYTQyLjEzIDQyLjEzIDAgMCAwIDUuNTgzIDIxLjAwM2M3LjI5NyAxMi43MzggMjEuMDE0IDIxLjMzIDM2Ljc1IDIxLjMzYzE1LjY1OSAwIDI5LjMyNS04LjUxIDM2LjY0Ny0yMS4xNTNsLjI0MS0uNDIzbDM2Ljk0NyAyMS40MDZjLTE0LjY1IDI1LjU5Ny00Mi4yMjggNDIuODUxLTczLjgzNSA0Mi44NTFjLTMxLjU0OSAwLTU5LjA4NC0xNy4xODUtNzMuNzU0LTQyLjcwN2MtNy4xNjItMTIuNDU5LTExLjI2LTI2LjkwNC0xMS4yNi00Mi4zMDdjMC00Ni45NSAzOC4wNjEtODUuMDEzIDg1LjAxNC04NS4wMTNtNzUuODY1IDcwLjMxNHY5LjczOGg5LjczN3Y5LjczN2gtOS43Mzd2OS43NGgtOS43Mzh2LTkuNzRoLTkuNzM4VjEzOC45aDkuNzM4di05LjczOHoiLz48L3N2Zz4=", "C": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjg4Ij48cGF0aCBmaWxsPSIjYTliOWNiIiBkPSJNMjU1Ljk4NyA4NS42NzJjLS4wMDItNC44NDMtMS4wMzctOS4xMjItMy4xMjktMTIuNzk0Yy0yLjA1NS0zLjYxMi01LjEzNC02LjYzOC05LjI2Mi05LjAzMmMtMzQuMDgxLTE5LjY3LTY4LjE5NS0zOS4yOC0xMDIuMjY0LTU4Ljk3Yy05LjE4NS01LjMwNy0xOC4wOTEtNS4xMTQtMjcuMjA4LjI3Yy0xMy41NjUgOC4wMDgtODEuNDgxIDQ2Ljk1Ni0xMDEuNzE5IDU4LjY4OUM0LjA3MSA2OC42NjUuMDE1IDc2LjA1Ni4wMTMgODUuNjYzQzAgMTI1LjIyMS4wMTMgMTY0Ljc3NyAwIDIwNC4zMzZjLjAwMiA0LjczNi45OTMgOC45MzIgMi45OTMgMTIuNTVjMi4wNTYgMy43MiA1LjE3NyA2LjgzIDkuNDAxIDkuMjc4YzIwLjIzOSAxMS43MzMgODguMTY0IDUwLjY3OCAxMDEuNzI2IDU4LjY4OGM5LjEyMSA1LjM4NyAxOC4wMjcgNS41NzkgMjcuMjE1LjI3YzM0LjA3LTE5LjY5MSA2OC4xODYtMzkuMyAxMDIuMjcyLTU4Ljk3YzQuMjI0LTIuNDQ3IDcuMzQ1LTUuNTU5IDkuNDAxLTkuMjc2YzEuOTk3LTMuNjE4IDIuOTktNy44MTQgMi45OTItMTIuNTUxYzAgMCAwLTc5LjA5NC0uMDEzLTExOC42NTMiLz48cGF0aCBmaWxsPSIjN2Y4Yjk5IiBkPSJNMTQxLjEwMSA1LjEzNGMtOS4xNy01LjI5NC0xOC4wNjEtNS4xMDEtMjcuMTYzLjI2OUMxMDAuMzk1IDEzLjM5IDMyLjU5IDUyLjIzNyAxMi4zODUgNjMuOTRDNC4wNjQgNjguNzU3LjAxNSA3Ni4xMjkuMDEzIDg1LjcxMUMwIDEyNS4xNjYuMDEzIDE2NC42MiAwIDIwNC4wNzZjLjAwMiA0LjcyNC45OTEgOC45MDkgMi45ODggMTIuNTE3YzIuMDUzIDMuNzExIDUuMTY5IDYuODEzIDkuMzg2IDkuMjU0YTkwMDkgOTAwOSAwIDAgMCAyMC4xNTkgMTEuNjJMMjE5LjYyNSA1MC4zNzVjLTI2LjE3OC0xNS4wNzQtNTIuMzYzLTMwLjEzNi03OC41MjQtNDUuMjQxIi8+PHBhdGggZmlsbD0iI2ZmZiIgZD0ibTE1NC40NTYgMTI2Ljk2OGwzOS44MzkuMjgxYzAtMTYuNTk5LTE2LjgwMi01Ny4yNDktNjQuOTczLTU3LjI0OWMtMzAuNjkxIDAtNzEuOTUxIDE5LjUxMi03MS45NTEgNzUuNjFTOTcuODE4IDIyMCAxMjkuMzIyIDIyMGM1MS4wMTcgMCA2My4yMS0zNS4zMDIgNjMuMjEtNTUuMjUybC0zOC4wMDctMi4xNzNzMS4wMTcgMjMuMDc1LTI1LjQwNiAyMy4wNzVjLTI0LjM5IDAtMjguNDYtMjkuODc4LTI4LjQ2LTQwLjA0YzAtMTUuNDQ3IDUuNDkzLTQwLjI0NCAyOC40Ni00MC4yNDRjMjIuOTY4IDAgMjUuMzM3IDIxLjYwMiAyNS4zMzcgMjEuNjAyIi8+PC9zdmc+", "claude": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU3Ij48cGF0aCBmaWxsPSIjZDk3NzU3IiBkPSJtNTAuMjI4IDE3MC4zMjFsNTAuMzU3LTI4LjI1N2wuODQzLTIuNDYzbC0uODQzLTEuMzYxaC0yLjQ2MmwtOC40MjYtLjUxOGwtMjguNzc1LS43NzhsLTI0Ljk1Mi0xLjAzN2wtMjQuMTc1LTEuMjk2bC02LjA5Mi0xLjI5N0wwIDEyNS43OTZsLjU4My0zLjc1OWw1LjEyLTMuNDM0bDcuMzI0LjY0OGwxNi4yMDIgMS4xMDFsMjQuMzA0IDEuNjg1bDE3LjYyOSAxLjAzN2wyNi4xMTggMi43MjJoNC4xNDhsLjU4My0xLjY4NWwtMS40MjYtMS4wMzdsLTEuMTAxLTEuMDM3bC0yNS4xNDctMTcuMDQ1bC0yNy4yMi0xOC4wMTdsLTE0LjI1OC0xMC4zN2wtNy43MTMtNS4yNWwtMy44ODgtNC45MjVsLTEuNjg1LTEwLjc1OGw3LTcuNzEzbDkuMzk3LjY0OWwyLjM5OC42NDhsOS41MjcgNy4zMjNsMjAuMzUgMTUuNzVMOTQuODE3IDkxLjlsMy44ODkgMy4yNGwxLjU1NS0xLjEwMmwuMTk1LS43NzdsLTEuNzUtMi45MTdsLTE0LjQ1My0yNi4xMThsLTE1LjQyNS0yNi41NzJsLTYuODctMTEuMDE4bC0xLjgxNC02LjYxYy0uNjQ4LTIuNzIzLTEuMTAyLTQuOTkxLTEuMTAyLTcuNzc4bDcuOTcyLTEwLjgyM0w3MS40MiAwbDEwLjYzIDEuNDI2bDQuNDcyIDMuODg4bDYuNjEgMTUuMTAxbDEwLjY5NCAyMy43ODZsMTYuNTkxIDMyLjM0bDQuODYxIDkuNTkybDIuNTkyIDguODc5bC45NzMgMi43MjJoMS42ODV2LTEuNTU2bDEuMzYtMTguMjExbDIuNTI4LTIyLjM2bDIuNDYzLTI4Ljc3NmwuODQzLTguMWw0LjAxOC05LjcyMmw3Ljk3MS01LjI1bDYuMjIyIDIuOTgxbDUuMTIgNy4zMjRsLS43MTMgNC43M2wtMy4wNDYgMTkuNzY4bC01Ljk2MiAzMC45OGwtMy44ODkgMjAuNzM5aDIuMjY4bDIuNTkzLTIuNTkzbDEwLjQ5OS0xMy45MzRsMTcuNjI4LTIyLjAzNmw3Ljc3OC04Ljc0OWw5LjA3My05LjY1N2w1LjgzMy00LjYwMWgxMS4wMThsOC4xIDEyLjA1NWwtMy42MjggMTIuNDQzbC0xMS4zNDIgMTQuMzg4bC05LjM5OCAxMi4xODRsLTEzLjQ4IDE4LjE0N2wtOC40MjYgMTQuNTE4bC43NzggMS4xNjZsMi4wMS0uMTk0bDMwLjQ2LTYuNDgxbDE2LjQ2Mi0yLjk4MmwxOS42MzctMy4zN2w4Ljg4IDQuMTQ4bC45NzEgNC4yMTNsLTMuNSA4LjYybC0yMC45OTggNS4xODRsLTI0LjYyOCA0LjkyNmwtMzYuNjgyIDguNjg1bC0uNDU0LjMyNGwuNTE5LjY0OGwxNi41MjYgMS41NTVsNy4wNjUuMzg5aDE3LjMwNGwzMi4yMSAyLjM5OGw4LjQyNiA1LjU3NGw1LjA1NSA2LjgwNWwtLjg0MyA1LjE4NGwtMTIuOTYyIDYuNjExbC0xNy40OTgtNC4xNDhsLTQwLjgzLTkuNzIxbC0xNC0zLjVoLTEuOTQ0djEuMTY3bDExLjY2NiAxMS40MDZsMjEuMzg3IDE5LjMxNGwyNi43NjcgMjQuODg3bDEuMzYgNi4xNTdsLTMuNDM0IDQuODZsLTMuNjMtLjUxOGwtMjMuNTI2LTE3LjY5M2wtOS4wNzMtNy45NzJsLTIwLjU0NS0xNy4zMDRoLTEuMzZ2MS44MTRsNC43MyA2LjkzNWwyNS4wMTcgMzcuNTlsMS4yOTYgMTEuNTM2bC0xLjgxNCAzLjc2bC02LjQ4MSAyLjI2OGwtNy4xMy0xLjI5N2wtMTQuNjQ3LTIwLjU0NGwtMTUuMS0yMy4xMzhsLTEyLjE4NS0yMC43MzlsLTEuNDkuODQzbC03LjE5NCA3Ny40NDhsLTMuMzcgMy45NTNsLTcuNzc4IDIuOTgxbC02LjQ4LTQuOTI1bC0zLjQzNi03Ljk3MmwzLjQzNS0xNS43NDlsNC4xNDgtMjAuNTQ0bDMuMzctMTYuMzMzbDMuMDQ2LTIwLjI4NWwxLjgxNS02Ljc0bC0uMTMtLjQ1NGwtMS40OS4xOTRsLTE1LjI5NSAyMC45OTlsLTIzLjI2NyAzMS40MzNsLTE4LjQwNiAxOS43MDJsLTQuNDA3IDEuNzVsLTcuNjQ4LTMuOTU0bC43MTMtNy4wNjRsNC4yNzctNi4yODZsMjUuNDctMzIuNDA1bDE1LjM2LTIwLjA5Mmw5LjkxNy0xMS42bC0uMDY1LTEuNjg2aC0uNTgzTDQ0LjA3IDE5OC4xMjVsLTEyLjA1NSAxLjU1NWwtNS4xODUtNC44NmwuNjQ4LTcuOTcybDIuNDYzLTIuNTkzbDIwLjM1LTEzLjk5OXoiLz48L3N2Zz4=", "github": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjUwIj48cGF0aCBmaWxsPSIjMTYxNjE0IiBkPSJNMTI4LjAwMSAwQzU3LjMxNyAwIDAgNTcuMzA3IDAgMTI4LjAwMWMwIDU2LjU1NCAzNi42NzYgMTA0LjUzNSA4Ny41MzUgMTIxLjQ2YzYuMzk3IDEuMTg1IDguNzQ2LTIuNzc3IDguNzQ2LTYuMTU4YzAtMy4wNTItLjEyLTEzLjEzNS0uMTc0LTIzLjgzYy0zNS42MSA3Ljc0Mi00My4xMjQtMTUuMTAzLTQzLjEyNC0xNS4xMDNjLTUuODIzLTE0Ljc5NS0xNC4yMTMtMTguNzMtMTQuMjEzLTE4LjczYy0xMS42MTMtNy45NDQuODc2LTcuNzguODc2LTcuNzhjMTIuODUzLjkwMiAxOS42MjEgMTMuMTkgMTkuNjIxIDEzLjE5YzExLjQxNyAxOS41NjggMjkuOTQ1IDEzLjkxMSAzNy4yNDkgMTAuNjRjMS4xNDktOC4yNzIgNC40NjYtMTMuOTIgOC4xMjctMTcuMTE2Yy0yOC40MzEtMy4yMzYtNTguMzE4LTE0LjIxMi01OC4zMTgtNjMuMjU4YzAtMTMuOTc1IDUtMjUuMzk0IDEzLjE4OC0zNC4zNThjLTEuMzI5LTMuMjI0LTUuNzEtMTYuMjQyIDEuMjQtMzMuODc0YzAgMCAxMC43NDktMy40NCAzNS4yMSAxMy4xMjFjMTAuMjEtMi44MzYgMjEuMTYtNC4yNTggMzIuMDM4LTQuMzA3YzEwLjg3OC4wNDkgMjEuODM3IDEuNDcgMzIuMDY2IDQuMzA3YzI0LjQzMS0xNi41NiAzNS4xNjUtMTMuMTIgMzUuMTY1LTEzLjEyYzYuOTY3IDE3LjYzIDIuNTg0IDMwLjY1IDEuMjU1IDMzLjg3M2M4LjIwNyA4Ljk2NCAxMy4xNzMgMjAuMzgzIDEzLjE3MyAzNC4zNThjMCA0OS4xNjMtMjkuOTQ0IDU5Ljk4OC01OC40NDcgNjMuMTU3YzQuNTkxIDMuOTcyIDguNjgyIDExLjc2MiA4LjY4MiAyMy43MDRjMCAxNy4xMjYtLjE0OCAzMC45MS0uMTQ4IDM1LjEyNmMwIDMuNDA3IDIuMzA0IDcuMzk4IDguNzkyIDYuMTRDMjE5LjM3IDIzMi41IDI1NiAxODQuNTM3IDI1NiAxMjguMDAyQzI1NiA1Ny4zMDcgMTk4LjY5MSAwIDEyOC4wMDEgMG0tODAuMDYgMTgyLjM0Yy0uMjgyLjYzNi0xLjI4My44MjctMi4xOTQuMzljLS45MjktLjQxNy0xLjQ1LTEuMjg0LTEuMTUtMS45MjJjLjI3Ni0uNjU1IDEuMjc5LS44MzggMi4yMDUtLjM5OWMuOTMuNDE4IDEuNDYgMS4yOTMgMS4xMzkgMS45MzFtNi4yOTYgNS42MThjLS42MS41NjYtMS44MDQuMzAzLTIuNjE0LS41OTFjLS44MzctLjg5Mi0uOTk0LTIuMDg2LS4zNzUtMi42NmMuNjMtLjU2NiAxLjc4Ny0uMzAxIDIuNjI2LjU5MWMuODM4LjkwMyAxIDIuMDg4LjM2MyAyLjY2bTQuMzIgNy4xODhjLS43ODUuNTQ1LTIuMDY3LjAzNC0yLjg2LTEuMTA0Yy0uNzg0LTEuMTM4LS43ODQtMi41MDMuMDE3LTMuMDVjLjc5NS0uNTQ3IDIuMDU4LS4wNTUgMi44NjEgMS4wNzVjLjc4MiAxLjE1Ny43ODIgMi41MjItLjAxOSAzLjA4bTcuMzA0IDguMzI1Yy0uNzAxLjc3NC0yLjE5Ni41NjYtMy4yOS0uNDljLTEuMTE5LTEuMDMyLTEuNDMtMi40OTYtLjcyNi0zLjI3Yy43MS0uNzc2IDIuMjEzLS41NTggMy4zMTUuNDljMS4xMSAxLjAzIDEuNDUgMi41MDUuNzAxIDMuMjdtOS40NDIgMi44MWMtLjMxIDEuMDAzLTEuNzUgMS40NTktMy4xOTkgMS4wMzNjLTEuNDQ4LS40MzktMi4zOTUtMS42MTMtMi4xMDMtMi42MjZjLjMwMS0xLjAxIDEuNzQ3LTEuNDg0IDMuMjA3LTEuMDI4YzEuNDQ2LjQzNiAyLjM5NiAxLjYwMiAyLjA5NSAyLjYyMm0xMC43NDQgMS4xOTNjLjAzNiAxLjA1NS0xLjE5MyAxLjkzLTIuNzE1IDEuOTVjLTEuNTMuMDM0LTIuNzY5LS44Mi0yLjc4Ni0xLjg2YzAtMS4wNjUgMS4yMDItMS45MzIgMi43MzMtMS45NThjMS41MjItLjAzIDIuNzY4LjgxOCAyLjc2OCAxLjg2OG0xMC41NTUtLjQwNWMuMTgyIDEuMDMtLjg3NSAyLjA4OC0yLjM4NyAyLjM3Yy0xLjQ4NS4yNzEtMi44NjEtLjM2NS0zLjA1LTEuMzg2Yy0uMTg0LTEuMDU2Ljg5My0yLjExNCAyLjM3Ni0yLjM4N2MxLjUxNC0uMjYzIDIuODY4LjM1NiAzLjA2MSAxLjQwMyIvPjwvc3ZnPg==", "git": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBmaWxsPSIjZGU0YzM2IiBkPSJNMjUxLjE3MiAxMTYuNTk0TDEzOS40IDQuODI4Yy02LjQzMy02LjQzNy0xNi44NzMtNi40MzctMjMuMzE0IDBsLTIzLjIxIDIzLjIxbDI5LjQ0MyAyOS40NDNjNi44NDItMi4zMTIgMTQuNjg4LS43NjEgMjAuMTQyIDQuNjkzYzUuNDggNS40ODkgNy4wMiAxMy40MDIgNC42NTIgMjAuMjY2bDI4LjM3NSAyOC4zNzZjNi44NjUtMi4zNjUgMTQuNzg2LS44MzUgMjAuMjY5IDQuNjU3YzcuNjYzIDcuNjYgNy42NjMgMjAuMDc1IDAgMjcuNzRjLTcuNjY1IDcuNjY2LTIwLjA4IDcuNjY2LTI3Ljc0OSAwYy01Ljc2NC01Ljc3LTcuMTg4LTE0LjIzNS00LjI3LTIxLjMzNmwtMjYuNDYyLTI2LjQ2MmwtLjAwMyA2OS42MzdhMTkuOCAxOS44IDAgMCAxIDUuMTg4IDMuNzFjNy42NjMgNy42NiA3LjY2MyAyMC4wNzYgMCAyNy43NDdjLTcuNjY1IDcuNjYyLTIwLjA4NiA3LjY2Mi0yNy43NCAwYy03LjY2My03LjY3MS03LjY2My0yMC4wODYgMC0yNy43NDZhMTkuNyAxOS43IDAgMCAxIDYuNDIxLTQuMjgxVjk0LjE5NmExOS40IDE5LjQgMCAwIDEtNi40MjEtNC4yODFjLTUuODA2LTUuNzk4LTcuMjAyLTE0LjMxNy00LjIyNy0yMS40NDZMODEuNDcgMzkuNDQyTDQuODMgMTE2LjA3N2MtNi40NCA2LjQ0My02LjQ0IDE2Ljg4NCAwIDIzLjMyMmwxMTEuNzc0IDExMS43NjhjNi40MzUgNi40MzggMTYuODczIDYuNDM4IDIzLjMxNiAwbDExMS4yNTEtMTExLjI0OWM2LjQzOC02LjQ0IDYuNDM4LTE2Ljg4NyAwLTIzLjMyNCIvPjwvc3ZnPg=="};
+// each logo is in the page's styles once; a card only names it (a few bytes instead of a few KB per use)
+const icSlug = (k) => 'ic-' + String(k).toLowerCase().replace(/#/g, 'sharp').replace(/\+/g, 'p').replace(/[^a-z0-9]/g, '');
+(() => { const st = document.createElement('style'); st.textContent = Object.entries(ICON).map(([k, u]) => `.${icSlug(k)}{background-image:url("${u}")}`).join(''); document.head.appendChild(st); })();
+const ic = (k, cls = '') => (ICON[k] ? `<i class="ic ${icSlug(k)} ${cls}${k === 'github' ? ' ink' : ''}" aria-hidden="true"></i>` : '');
+const langChip = (l) => `<span class="chip">${ic(l)}${esc(l)}</span>`;
+document.querySelector('[data-src="git"]').insertAdjacentHTML('afterbegin', ic('github') + ' ');
+// ---- pull request check (GitHub)
+let PRS = { hasToken: false, prs: [] };
+const prIcon = (st) => (st === 'safe' ? '✅' : st === 'breaks' ? '❌' : st === 'checking' ? '⏳' : '⚠️');
+const ago = (t) => { if (!t) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; };
+function prList() {
+  return PRS.prs.length ? `<div class="prlist">${PRS.prs.map(p => `<div class="pr pr-${esc(p.status)}"><span class="pr-ic" aria-hidden="true">${prIcon(p.status)}</span><span class="pr-t"><a href="${esc(p.url || '#')}" target="_blank" rel="noopener">#${p.number} ${esc(p.title || '')}</a><small>${p.by ? '@' + esc(p.by) + ' · ' : ''}${p.status === 'checking' ? 'checking now…' : esc(p.headline)}${p.at && p.status !== 'checking' ? ' · ' + ago(p.at) : ''}</small>${(p.problems || []).slice(0, 4).map(x => `<small class="pr-p">${esc(x.title)} → <b>${esc(x.owner)}</b>${x.partner ? ', clashes with ' + esc(x.partner) : ''}</small>`).join('')}${p.commentError ? `<small class="err">Couldn't write the comment: ${esc(p.commentError)}</small>` : ''}</span></div>`).join('')}</div>` : '';
+}
+function prSection(S, admin, dis) {
+  const howTo = `<details><summary>How to make a token (2 minutes)</summary><ol class="note steps">
+    <li>On github.com: your picture → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b>.</li>
+    <li>Name it "Tandemi". Under <b>Repository access</b> choose <b>Only select repositories</b> and pick this project's repository.</li>
+    <li>Under <b>Permissions</b> set <b>Pull requests</b> to "Read and write", <b>Commit statuses</b> to "Read and write" and <b>Contents</b> to "Read-only".</li>
+    <li>Click <b>Generate token</b>, copy it (it starts with <code>github_pat_</code>) and paste it here. GitHub shows it only once.</li></ol></details>`;
+  return `<section class="card" id="prCard"><h2>${ic('github', 'lg')}Pull requests (GitHub)</h2>
+    <div class="set-row"><span class="note">Tandemi checks every new or updated pull request together with the main branch and the other open pull requests, then writes the result on the pull request: <b>safe to merge</b>, or what breaks and whose change it is. It checks while Tandemi is open.</span></div>
+    <div class="set-row"><b>GitHub token</b>${PRS.hasToken ? `<span>Saved for ${here() && !here().personal ? 'this team' : 'your Personal space'}, only on this computer. ${admin ? '<button class="btn small" id="prTokenClear">Remove it</button>' : ''}</span>` : admin ? `<div class="row"><input class="t grow" id="prToken" type="password" placeholder="github_pat_…" autocomplete="off"><button class="btn small primary" id="prTokenSave">Save</button></div>${howTo}` : '<span class="muted">Ask the team\'s owner or an admin to add a GitHub token.</span>'}</div>
+    <div class="set-row"><b>Repository</b><div class="row"><input class="t grow" id="prRepo" placeholder="${esc(PRS.repo || 'owner/name')}" value="${esc(S.prRepo || '')}" spellcheck="false"${dis}><button class="btn small" id="prRepoSave"${dis}>Save</button></div><span class="note">Leave it empty to use the open project's GitHub repository${PRS.repo ? ` (now <b>${esc(PRS.repo)}</b>)` : ''}.</span></div>
+    <div class="set-row"><label class="tg"><input type="checkbox" id="prAuto"${S.prAuto ? ' checked' : ''}${dis}> Check pull requests automatically (every ${Math.round((PRS.every || 120) / 60)} minutes)</label><label class="tg"><input type="checkbox" id="prComment"${S.prComment !== false ? ' checked' : ''}${dis}> Write the result on the pull request</label></div>
+    <div class="set-row"><div class="row"><button class="btn small primary" id="prNow"${PRS.busy || !PRS.hasToken ? ' disabled' : ''}>${PRS.busy ? 'Checking…' : 'Check the open pull requests now'}</button></div><span class="note">${esc(PRS.step || (PRS.last ? 'Last looked ' + ago(PRS.last) + '.' : ''))}</span>${PRS.error ? `<span class="err">${esc(PRS.error)}</span>` : ''}<span class="err" id="prErr"></span></div>
+    ${prList()}
+  </section>`;
+}
+function prbar() {
+  const on = !!(SET && SET.settings && SET.settings.prAuto) && PRS.hasToken, el = $('prbar');
+  el.hidden = !on && !PRS.prs.length;
+  if (el.hidden) return;
+  const bad = PRS.prs.filter(p => p.status === 'breaks').length, ok = PRS.prs.filter(p => p.status === 'safe').length;
+  el.innerHTML = `<div class="prbar-h">${ic('github')}<b>Pull requests</b><span class="note">${PRS.busy ? esc(PRS.step || 'Checking…') : PRS.prs.length ? `${ok} safe, ${bad} break${bad === 1 ? 's' : ''} something${PRS.repo ? ' · ' + esc(PRS.repo) : ''}` : 'No open pull requests' + (PRS.repo ? ' in ' + esc(PRS.repo) : '')}</span>${PRS.error ? `<span class="err">${esc(PRS.error)}</span>` : ''}</div>${prList()}`;
+}
+// ---- settings, teams and accounts
+let SET = null, ME = null, HUB = null, TEAMM = null, NEWINV = null;
+const SPACE = (location.pathname.match(/^\/s\/([0-9a-f]{12})\//) || [])[1] || null;
+const here = () => (HUB && HUB.spaces.find(x => x.id === SPACE)) || null;
+const look = () => { try { return { theme: 'system', style: 'arcade', celebrate: true, ...JSON.parse(localStorage.getItem('tandemi-look') || '{}') }; } catch (e) { return { theme: 'system', style: 'arcade', celebrate: true }; } };
+function applyLook(l = look()) { const r = document.documentElement; if (l.theme === 'system') delete r.dataset.theme; else r.dataset.theme = l.theme; r.dataset.style = l.style; }
+function setLook(ch) { const l = { ...look(), ...ch }; try { localStorage.setItem('tandemi-look', JSON.stringify(l)); } catch (e) { /* this session only */ } applyLook(l); renderSettings(); }
+async function loadSettings() { const r = await fetch('api/settings', { cache: 'no-store' }).then(x => x.json()).catch(() => null); if (r && r.settings) { SET = r; keybar(); renderSettings(); prbar(); } }
+async function loadHub() { const r = await post('/api/hub/me'); if (!r.error) { HUB = r; ME = r.me; meChip(); rail(); keybar(); renderSettings(); } }
+async function loadTeam() { if (!SPACE || (here() && here().personal)) { TEAMM = null; return; } const r = await post('/api/hub/members', { id: SPACE }); if (!r.error) { TEAMM = r; if (['owner', 'admin'].includes(r.myRole)) { const v = await post('/api/hub/invites', { id: SPACE }); TEAMM.invites = v.invites || []; } renderSettings(); } }
+function meChip() {
+  const el = $('meChip'); if (!el) return;
+  el.innerHTML = ME ? `<span class="me" title="${esc(ME.email)}"><i class="me-face" aria-hidden="true">${esc((ME.name || '?').trim().charAt(0).toUpperCase())}</i>${esc(ME.name)}</span><button class="btn" id="signOut">Sign out</button>` : '';
+  if (ME) $('signOut').onclick = () => post('/api/auth/logout').then(() => { location.href = '/login'; });
+  const t = here(); if ($('teamName')) $('teamName').textContent = t ? (t.personal ? 'Personal space' : t.name) : '';
+}
+// the team rail, like Discord: your Personal space first, then every team; + makes or joins one
+function rail() {
+  const el = $('rail'); if (!el || !HUB) return;
+  el.hidden = false; document.body.classList.add('has-rail');
+  el.innerHTML = HUB.spaces.map(t => `<a href="/s/${t.id}/" class="rail-i${t.id === SPACE ? ' on' : ''}" title="${esc(t.personal ? 'Personal space' : t.name)}" aria-label="${esc(t.personal ? 'Personal space' : t.name)}"${t.id === SPACE ? ' aria-current="page"' : ''} style="--c:${esc(t.color || '#FFD23F')}">${t.personal ? '★' : esc(initial(t.name))}</a>`).join('')
+    + '<button class="rail-i add" id="railAdd" title="Create or join a team" aria-label="Create or join a team">+</button>';
+  $('railAdd').onclick = () => { $('tdErr').textContent = ''; $('teamDlg').showModal(); $('tdName').focus(); };
+}
+const segH = (id, val, opts, off) => `<div class="seg" role="group">${opts.map(([v, l]) => `<button data-${id}="${v}" aria-pressed="${v === val}"${off ? ' disabled' : ''}>${esc(l)}</button>`).join('')}</div>`;
+async function saveSetting(ch) { const r = await post('api/settings', { changes: ch }); if (r.error) { $('setErr').textContent = r.error; return; } SET = r; $('setErr').textContent = ''; renderSettings(); }
+async function hubDo(what, body, then) { const r = await post('/api/hub/' + what, body); if (r.error) { $('setErr').textContent = r.error; return null; } $('setErr').textContent = ''; if (then) await then(r); return r; }
+const ROLE = { owner: 'Owner', admin: 'Admin', member: 'Member' };
+function renderSettings() {
+  const el = $('settings'); if (!el || el.hidden || !SET) return;
+  const keep = { open: [...el.querySelectorAll('details[open] > summary')].map(x => x.textContent), vals: {}, focus: document.activeElement && el.contains(document.activeElement) ? document.activeElement.id : null };
+  el.querySelectorAll('input[id]:not([type=checkbox])').forEach(i => { keep.vals[i.id] = i.value; });
+  const L = look(), S = SET.settings, admin = SET.owner, dis = admin ? '' : ' disabled', t = here(), tm = TEAMM, my = tm ? tm.myRole : (t ? t.role : null);
+  const canInvite = my === 'owner' || my === 'admin';
+  el.innerHTML = `<section class="card"><h2>Settings</h2><p class="note">The look is yours. ${t && t.personal ? 'Everything else here is your Personal space.' : `The rest is for everyone in <b>${esc(t ? t.name : 'this team')}</b>${admin ? '' : ' (only its owner and admins change it)'}.`}</p><p class="err" id="setErr" role="alert"></p>
+  ${HUB && HUB.restartNeeded ? '<div class="banner bad">Restart Tandemi (close it and start it again) to apply the network change.</div>' : ''}
+  <div class="set-grid">
+    <section class="card"><h2>Look</h2>
+      <div class="set-row"><b>Theme</b>${segH('theme', L.theme, [['system', 'Like Windows'], ['light', 'Light'], ['dark', 'Dark']])}</div>
+      <div class="set-row"><b>Style</b>${segH('style', L.style, [['arcade', 'Arcade'], ['calm', 'Calm']])}<span class="note">Calm keeps the same page without stickers and bold outlines.</span></div>
+      <div class="set-row"><label class="tg"><input type="checkbox" id="setParty"${L.celebrate ? ' checked' : ''}> Celebrate when every test passes</label></div>
+    </section>
+    <section class="card"><h2>${t && t.personal ? 'Personal space' : 'Team'}</h2>
+      ${!t ? '<span class="muted">Loading…</span>' : t.personal ? `<div class="set-row"><span class="note">Only you see your Personal space: its projects, merges, tests and API key.</span><div class="row"><button class="btn small primary" id="goTeam">Create or join a team</button></div></div>` : `
+      <div class="set-row"><b>Name</b>${my === 'owner' || my === 'admin' ? `<div class="row"><input class="t grow" id="tmName" value="${esc(t.name)}" maxlength="40"><button class="btn small" id="tmRename">Rename</button></div>` : `<span>${esc(t.name)}</span>`}</div>
+      <div class="set-row"><b>People</b>${tm ? `<div class="people">${tm.members.map(p => `<div class="person"><i class="face" style="background:var(--b-fill)">${esc(initial(p.name))}</i><span class="nm">${esc(p.name)}${p.me ? ' (you)' : ''}<small>${esc(p.email)}</small></span>${my === 'owner' && !p.me ? `<select data-trole="${esc(p.uid)}" aria-label="Role of ${esc(p.name)}">${Object.entries(ROLE).map(([v, l]) => `<option value="${v}"${p.role === v ? ' selected' : ''}>${l}</option>`).join('')}</select>` : `<span class="chip">${ROLE[p.role]}</span>`}${!p.me && (my === 'owner' || (my === 'admin' && p.role !== 'owner')) ? `<button class="btn small" data-tkick="${esc(p.uid)}">Remove</button>` : ''}</div>`).join('')}</div>` : '<span class="muted">Loading…</span>'}</div>
+      ${canInvite ? `<div class="set-row"><b>Invite people</b><span class="note">Send them the link. They sign in or create an account, and they're in.</span>
+        <div class="row"><select id="invRole"><option value="member">as members</option>${my === 'owner' ? '<option value="admin">as admins</option>' : ''}</select><select id="invDays"><option value="7">for 7 days</option><option value="1">for 1 day</option><option value="30">for 30 days</option><option value="0">with no end</option></select><button class="btn small primary" id="invMake">Make an invite link</button></div>
+        ${NEWINV ? `<div class="row"><code class="path-t" id="invLink">${esc(NEWINV.link)}</code><button class="btn small" id="invCopy">Copy</button></div><span class="note">Shown once. Make a new one any time.</span>` : ''}
+        ${tm && tm.invites && tm.invites.length ? `<details><summary>Open invites (${tm.invites.length})</summary>${tm.invites.map(v => `<div class="person"><span class="nm">${ROLE[v.role]}s, used ${v.uses} time${v.uses === 1 ? '' : 's'}<small>${v.expires ? 'until ' + new Date(v.expires).toLocaleDateString() : 'no end'}</small></span><button class="btn small" data-trevoke="${esc(v.id)}">Stop it</button></div>`).join('')}</details>` : ''}</div>` : ''}
+      <div class="set-row"><div class="row"><button class="btn small" id="tmLeave">Leave the team</button>${my === 'owner' ? '<button class="btn small" id="tmDelete">Delete the team</button>' : ''}</div><span class="note" id="tmDangerNote"></span></div>`}
+    </section>
+    <section class="card"><h2>Bugs and AI</h2>
+      <div class="set-row"><b>When bugs are found</b>${segH('mode', S.mode, [['auto', 'Agents fix it'], ['report', 'Just report']], !admin)}<span class="note">Agents fix it needs Claude connected below (or an AI coder over the MCP).</span></div>
+      <div class="set-row"><b>Who does the AI work</b>${segH('aiVia', S.aiVia || 'auto', [['auto', 'Automatic'], ['claude-code', 'Claude Code'], ['key', 'API key']], !admin)}<span class="note">${SET.ai && SET.ai.claudeCode.ok ? `Claude Code ${esc(SET.ai.claudeCode.version || '')} is installed on this computer${SET.ai.claudeCode.using ? ' and Tandemi uses it' : ''}. It uses the Claude subscription of whoever signed in to it here${t && !t.personal ? ', for everyone in this team' : ''}.` : 'Claude Code is not found on this computer. Install it once: <code>npm install -g @anthropic-ai/claude-code</code>, then type <code>claude</code> and sign in.'} Automatic uses the API key when there is one, otherwise Claude Code.</span></div>
+      <div class="set-row"><b>Anthropic API key</b>${SET.hasKey ? `<span>Saved for ${t && t.personal ? 'your Personal space' : 'this team'}. <button class="btn small" id="setKeyClear"${dis}>Remove it</button></span>` : `<div class="row"><input class="t grow" id="setKey" type="password" placeholder="sk-ant-…" autocomplete="off"${dis}><button class="btn small primary" id="setKeySave"${dis}>Save</button></div><span class="note">Each team has its own key, so its AI costs go to that team.</span>`}</div>
+      <div class="set-row"><b>Model the agents use</b><select id="setModel"${dis}>${SET.models.map(m => `<option value="${esc(m.id)}"${m.id === S.model ? ' selected' : ''}>${esc(m.name)}</option>`).join('')}</select><span class="note">${esc((SET.models.find(m => m.id === S.model) || {}).note || '')}</span></div>
+    </section>
+    ${prSection(S, admin, dis)}
+    <section class="card"><h2>${ic('claude', 'lg')}AI coders (MCP)</h2>
+      <div class="set-row"><span class="note">Let Claude Desktop work in ${t && !t.personal ? 'this team' : 'your Personal space'} as you: merge, read the bugs sent to you and fix them. It gets its own key for ${t && !t.personal ? 'this team' : 'it'}.</span>
+        <div class="row">${HUB && HUB.local ? '<button class="btn small primary" id="mcpConnect">Connect Claude Desktop</button>' : ''}<button class="btn small" id="mcpCode">${HUB && HUB.local ? 'Other AI coders' : 'Show the command'}</button><button class="btn small" id="mcpOff">Disconnect</button></div>
+        <span class="note" id="mcpMsg"></span><code class="path-t" id="mcpCmd" hidden></code></div>
+    </section>
+    <section class="card"><h2>My account</h2>
+      ${ME ? `<div class="set-row"><b>${esc(ME.name)}</b><span class="note">${esc(ME.email)}</span></div>
+        <div class="set-row"><details><summary>Change my password</summary><div class="form"><input class="t" id="pwOld" type="password" placeholder="Current password" autocomplete="current-password"><input class="t" id="pwNew" type="password" placeholder="New password (8 or more characters)" autocomplete="new-password"><div class="row"><button class="btn small" id="pwSave">Change password</button></div></div></details></div>
+        <div class="set-row"><div class="row"><button class="btn small" id="setSignOut">Sign out</button></div></div>` : '<span class="muted">Loading…</span>'}
+    </section>
+    ${HUB && HUB.serverOwner ? `<section class="card"><h2>This Tandemi server</h2>
+      <div class="set-row"><span class="note">You own this Tandemi (you made its first account).</span></div>
+      <div class="set-row"><label class="tg"><input type="checkbox" id="srvReg"${HUB.server.allowRegister ? ' checked' : ''}> Anyone who can open it may create an account</label><span class="note">Off: only people with an invite link can.</span></div>
+      <div class="set-row"><label class="tg"><input type="checkbox" id="srvShare"${HUB.server.shareOnNetwork ? ' checked' : ''}> Other laptops on the same Wi-Fi can open it</label>${HUB.server.shareOnNetwork && HUB.server.lan.length ? `<span class="note">They open: ${HUB.server.lan.map(u => `<code class="path-t">${esc(u)}</code>`).join(' ')}</span>` : ''}</div>
+    </section>` : ''}
+    <section class="card"><h2>Storage</h2>
+      ${SET.data ? `<div class="set-row"><b>${t && t.personal ? 'Your' : 'This team’s'} data</b><span class="path-t">${esc(SET.data)}</span></div><div class="set-row"><b>Final code, GitHub projects, the example</b><span class="path-t">${esc(SET.home)}</span></div>` : ''}
+      <div class="set-row"><b>Remembered results</b><span class="note">Tandemi remembers build and test results so it never checks the same code twice.</span><div class="row"><button class="btn small" id="setForget"${dis}>Forget them</button><span class="muted" id="forgotMsg"></span></div></div>
+    </section>
+    <section class="card"><h2>About</h2><div class="set-row"><b>Tandemi ${esc(SET.version || '')}</b><span class="note">Merges developers' work by the code's structure, tests it, and sends every bug to whoever caused it.</span></div></section>
+  </div></section>`;
+  el.querySelectorAll('details > summary').forEach(x => { if (keep.open.includes(x.textContent)) x.parentElement.open = true; });
+  for (const [id, v] of Object.entries(keep.vals)) if ($(id) && v && id !== 'tmName') $(id).value = v;
+  if (keep.focus && $(keep.focus)) $(keep.focus).focus();
+  const q = (sel, fn) => el.querySelectorAll(sel).forEach(fn), on = (id, ev, fn) => { if ($(id)) $(id)[ev] = fn; };
+  q('[data-theme]', b => b.onclick = () => setLook({ theme: b.dataset.theme }));
+  q('[data-style]', b => b.onclick = () => setLook({ style: b.dataset.style }));
+  on('setParty', 'onchange', (e) => setLook({ celebrate: e.target.checked }));
+  q('[data-mode]', b => b.onclick = () => admin && saveSetting({ mode: b.dataset.mode }));
+  q('[data-aivia]', b => b.onclick = () => admin && saveSetting({ aiVia: b.dataset.aivia }));
+  on('setModel', 'onchange', (e) => saveSetting({ model: e.target.value }));
+  on('prAuto', 'onchange', (e) => saveSetting({ prAuto: e.target.checked }));
+  on('prComment', 'onchange', (e) => saveSetting({ prComment: e.target.checked }));
+  on('prRepoSave', 'onclick', () => saveSetting({ prRepo: $('prRepo').value.trim() }));
+  on('prTokenSave', 'onclick', async () => { const r = await post('api/pr/token', { token: $('prToken').value }); if (r.error) $('prErr').textContent = r.error; else { $('prToken').value = ''; PRS = r; renderSettings(); } });
+  on('prTokenClear', 'onclick', async () => { PRS = await post('api/pr/token/clear', {}); renderSettings(); });
+  on('prNow', 'onclick', async () => { const r = await post('api/pr/check', {}); if (r.error) $('prErr').textContent = r.error; });
+  on('setKeySave', 'onclick', async () => { const r = await post('api/key', { key: $('setKey').value }); if (r.error) $('setErr').textContent = r.error; else { $('setKey').value = ''; loadSettings(); } });
+  on('setKeyClear', 'onclick', async () => { await post('api/key/clear'); loadSettings(); });
+  on('setForget', 'onclick', async () => { const r = await post('api/settings/forget-results'); $('forgotMsg').textContent = r.error || 'Forgotten. The next check runs everything again.'; });
+  on('goTeam', 'onclick', () => $('railAdd') && $('railAdd').click());
+  on('tmRename', 'onclick', () => hubDo('rename', { id: SPACE, name: $('tmName').value }, loadHub));
+  q('[data-trole]', x => x.onchange = () => hubDo('role', { id: SPACE, uid: x.dataset.trole, role: x.value }, (r) => { TEAMM = { ...TEAMM, ...r }; renderSettings(); }));
+  q('[data-tkick]', b => b.onclick = () => hubDo('kick', { id: SPACE, uid: b.dataset.tkick }, (r) => { TEAMM = { ...TEAMM, ...r }; renderSettings(); }));
+  on('invMake', 'onclick', () => hubDo('invite', { id: SPACE, role: $('invRole').value, days: Number($('invDays').value) }, (r) => { NEWINV = { ...r, link: location.origin + '/join/' + r.code }; loadTeam(); }));
+  on('invCopy', 'onclick', () => { navigator.clipboard && navigator.clipboard.writeText(NEWINV.link).then(() => { $('invCopy').textContent = 'Copied'; }); });
+  q('[data-trevoke]', b => b.onclick = () => hubDo('revoke', { id: SPACE, invite: b.dataset.trevoke }, (r) => { TEAMM.invites = r.invites; renderSettings(); }));
+  // leaving and deleting ask for a second click (a deleted team's projects and merges are gone)
+  const twice = (id, label, go) => on(id, 'onclick', () => { const b = $(id); if (b.dataset.armed) return go(); b.dataset.armed = '1'; b.textContent = label; b.classList.add('primary'); setTimeout(() => { if ($(id)) { delete $(id).dataset.armed; renderSettings(); } }, 4000); });
+  twice('tmLeave', 'Click again to leave', () => hubDo('leave', { id: SPACE }, () => { location.href = '/'; }));
+  twice('tmDelete', 'Click again: delete it for everyone', () => hubDo('delete', { id: SPACE }, () => { location.href = '/'; }));
+  on('mcpConnect', 'onclick', () => hubDo('mcp', { id: SPACE }, (r) => { $('mcpMsg').textContent = r.error ? r.error : `Added as "${r.name}". Fully quit Claude Desktop (also from the tray) and open it again.`; }));
+  on('mcpCode', 'onclick', () => hubDo('mcp', { id: SPACE, noconfig: true }, (r) => { $('mcpCmd').hidden = false; $('mcpCmd').textContent = r.claudeCode; $('mcpMsg').textContent = 'Claude Code: run this once. Keep it private: it works as you. (Any earlier key for this stops working.)'; }));
+  on('mcpOff', 'onclick', () => hubDo('mcp', { id: SPACE, disconnect: true }, () => { $('mcpMsg').textContent = 'Disconnected: the AI coder key for this stops working.'; $('mcpCmd').hidden = true; }));
+  on('pwSave', 'onclick', async () => { const r = await post('/api/auth/password', { old: $('pwOld').value, new: $('pwNew').value }); $('setErr').textContent = r.error || ''; if (!r.error) { $('pwOld').value = $('pwNew').value = ''; $('setErr').textContent = 'Password changed. You are signed out everywhere else.'; } });
+  on('setSignOut', 'onclick', () => post('/api/auth/logout').then(() => { location.href = '/login'; }));
+  on('srvReg', 'onchange', (e) => hubDo('server', { changes: { allowRegister: e.target.checked } }, (r) => { HUB = r; renderSettings(); }));
+  on('srvShare', 'onchange', (e) => hubDo('server', { changes: { shareOnNetwork: e.target.checked } }, (r) => { HUB = r; renderSettings(); }));
+}
+function showSettings(on) {
+  const el = $('settings'); el.hidden = !on; $('setBtn').setAttribute('aria-expanded', String(on)); $('setBtn').textContent = on ? 'Back' : 'Settings';
+  document.querySelectorAll('.wrap > :not(header):not(#settings)').forEach(n => { if (on) { n.dataset.wasHidden = n.hidden ? '1' : ''; n.hidden = true; } else if (n.dataset.wasHidden !== undefined) { n.hidden = n.dataset.wasHidden === '1'; delete n.dataset.wasHidden; } });
+  if (on) { NEWINV = null; loadSettings(); loadHub(); loadTeam(); history.replaceState(null, '', '#settings'); window.scrollTo(0, 0); } else { history.replaceState(null, '', location.pathname); renderedKey = ''; teamKey = ''; plainKey = ''; render(); }
+}
+// create a team, or join one with an invite
+function teamDialog() {
+  $('tdCreate').onclick = async () => { const r = await post('/api/hub/create', { name: $('tdName').value }); if (r.error) $('tdErr').textContent = r.error; else location.href = `/s/${r.space.id}/`; };
+  $('tdJoin').onclick = async () => { const r = await post('/api/hub/join', { code: $('tdCode').value }); if (r.error) $('tdErr').textContent = r.error; else location.href = `/s/${r.space.id}/`; };
+  $('tdName').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('tdCreate').click(); } };
+  $('tdCode').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); $('tdJoin').click(); } };
+}
+// ---- tests in plain words
+const plainDraft = {}; let plainKey = '';
+const PLAIN_CHIP = { new: ['', 'Waiting to be written'], writing: ['busy', 'AI is writing it…'], checking: ['busy', 'Checking…'], ready: ['pass', 'Ready: runs with every check'], 'fails-start': ['fail', 'Fails on the starting code'], error: ['fail', 'Needs a fix'], unchecked: ['', 'Not checked yet'] };
+function renderPlain(show) {
+  const el = $('plain');
+  if (!show || !P.open) { el.hidden = true; plainKey = ''; return; }
+  el.hidden = false;
+  const list = P.plain || [];
+  const key = JSON.stringify([list, P.hasAI, P.busy, Object.keys(plainDraft).filter(k => plainDraft[k].open)]);
+  if (key === plainKey) return;
+  // keep what someone is typing
+  const typing = $('plainText') ? $('plainText').value : '';
+  for (const id of Object.keys(plainDraft)) if ($('pf' + id)) Object.assign(plainDraft[id], { file: $('pf' + id).value, name: $('pn' + id).value, code: $('pc' + id).value });
+  plainKey = key;
+  const ready = list.filter(t => t.status === 'ready' || t.keep).length;
+  el.innerHTML = `<section class="card"><h2>Tests in plain words ${list.length ? `<span class="chip ${ready ? 'pass' : ''}">${ready} of ${list.length} running</span>` : ''}</h2>
+    <p class="note">Write what must stay true, in one sentence. Tandemi turns it into a real test in this project's own test framework${P.hasAI ? ' with AI' : ' (with AI once Claude is connected at the top, through your AI coder over the MCP, or you write it)'}, checks that it passes on the starting code, then runs it on each developer's version and on the merge. If a merge breaks it, it shows up as a bug.</p>
+    <div class="row"><input class="t grow" id="plainText" placeholder="The cat never jumps off the top of the screen" maxlength="500" spellcheck="true"><button class="btn primary" id="plainAddBtn">Add test</button></div>
+    <p class="err" id="plainErr"></p>
+    ${list.length ? `<div class="plain-list">${list.map(t => {
+      const [cls, label] = t.keep && t.status !== 'ready' ? ['pass', 'Kept: runs with every check'] : PLAIN_CHIP[t.status] || ['', t.status];
+      const d = plainDraft[t.id] || {};
+      const canAI = P.hasAI && !t.busy && ['new', 'error', 'fails-start', 'unchecked'].includes(t.status);
+      return `<div class="plain-item ${t.keep ? 'ready' : esc(t.status)}"><h4>“${esc(t.text)}”<span class="chip ${cls}">${esc(label)}</span>${t.by ? `<span class="muted" style="font-weight:400;font-size:12.5px">written ${t.by === 'by hand' ? 'by hand' : 'by ' + esc(t.by)}</span>` : ''}</h4>
+        ${t.note ? `<p class="note">${esc(t.note)}</p>` : ''}
+        ${t.why && t.status === 'ready' ? `<p class="note">It checks: ${esc(t.why)}</p>` : ''}
+        ${t.code && !d.open ? `<details><summary class="muted">See the test (${esc(t.file)})</summary><pre>${esc(t.code)}</pre></details>` : ''}
+        ${d.open ? `<div class="plain-ed">
+          <div class="row"><label class="f grow">New test file<input class="t path" id="pf${t.id}" value="${esc(d.file ?? t.file ?? '')}" placeholder="tests/MyGame.Tests/PlainTests.cs" spellcheck="false"></label><label class="f">Test name (method or function)<input class="t" id="pn${t.id}" value="${esc(d.name ?? t.testName ?? '')}" placeholder="CatNeverLeavesTheScreen" spellcheck="false"></label></div>
+          <label class="f">Code<textarea class="code" id="pc${t.id}" spellcheck="false">${esc(d.code ?? t.code ?? '')}</textarea></label>
+          <div class="acts"><button class="btn primary" data-pset="${t.id}"${P.busy ? ' disabled' : ''}>Save and check</button><button class="btn" data-pcancel="${t.id}">Cancel</button></div></div>` : ''}
+        <div class="acts">${canAI ? `<button class="btn small primary" data-pwrite="${t.id}"${P.busy ? ' disabled' : ''}>${t.code ? 'Let AI try again' : 'Let AI write it'}</button>` : ''}${!t.busy && !d.open ? `<button class="btn small" data-pedit="${t.id}">${t.code ? 'Change the code' : 'Write it myself'}</button>` : ''}${t.status === 'fails-start' || (t.keep && t.status !== 'ready') ? `<button class="btn small" data-pkeep="${t.id}" data-on="${t.keep ? 0 : 1}">${t.keep ? 'Stop running it' : 'Keep it anyway'}</button>` : ''}${!t.busy ? `<button class="btn small" data-premove="${t.id}">Remove</button>` : ''}</div>
+      </div>`; }).join('')}</div>` : ''}</section>`;
+  $('plainText').value = typing;
+  const err = (r) => { $('plainErr').textContent = r && r.error ? r.error : ''; };
+  const add = () => { const v = $('plainText').value.trim(); if (!v) return; post('api/project/plain_add', { text: v }).then(r => { err(r); if (!r.error) { $('plainText').value = ''; } }); };
+  $('plainAddBtn').onclick = add;
+  $('plainText').onkeydown = (e) => { if (e.key === 'Enter') add(); };
+  el.querySelectorAll('[data-pwrite]').forEach(b => b.onclick = () => { b.disabled = true; post('api/project/plain_write', { id: +b.dataset.pwrite }).then(err); });
+  el.querySelectorAll('[data-pedit]').forEach(b => b.onclick = () => { plainDraft[b.dataset.pedit] = { open: true }; plainKey = ''; renderPlain(true); });
+  el.querySelectorAll('[data-pcancel]').forEach(b => b.onclick = () => { delete plainDraft[b.dataset.pcancel]; plainKey = ''; renderPlain(true); });
+  el.querySelectorAll('[data-pset]').forEach(b => b.onclick = () => { const id = b.dataset.pset; b.disabled = true; post('api/project/plain_set', { id: +id, file: $('pf' + id).value.trim(), testName: $('pn' + id).value.trim(), code: $('pc' + id).value }).then(r => { err(r); if (!r.error) delete plainDraft[id]; else b.disabled = false; plainKey = ''; renderPlain(true); }); });
+  el.querySelectorAll('[data-pkeep]').forEach(b => b.onclick = () => post('api/project/plain_keep', { id: +b.dataset.pkeep, keep: b.dataset.on === '1' }).then(err));
+  el.querySelectorAll('[data-premove]').forEach(b => b.onclick = () => post('api/project/plain_remove', { id: +b.dataset.premove }).then(err));
+}
+function render() {
+  renderGit(); renderTop();
+  // the results belong to the source on screen
+  if (teamOn()) { renderedKey = ''; renderPlain(false); renderTeam(); return; }
+  teamKey = '';
+  const mine = P.open && ((src === 'code') === (P.source === 'workspace'));
+  renderPlain(mine && !teamOn());
+  if (mine) renderResult(); else { $('result').hidden = true; renderedKey = ''; }
+}
+function renderWS() { if (WS.exists && document.activeElement !== $('title')) $('title').value = WS.title || ''; renderSides(); renderTop(); }
+
+keybar();
+applyLook(); loadSettings(); loadHub(); teamDialog();
+$('setBtn').onclick = () => showSettings($('settings').hidden);
+if (location.hash === '#settings') setTimeout(() => showSettings(true), 0);
+// "Start over": a second click within 4 seconds confirms it (pasted code is thrown away)
+(() => {
+  const b = $('startOver'); let armed = null;
+  b.onclick = () => {
+    if (!armed) { b.textContent = 'Click again to start over'; b.classList.add('primary'); armed = setTimeout(() => { armed = null; b.textContent = 'Start over'; b.classList.remove('primary'); }, 4000); return; }
+    clearTimeout(armed); armed = null; b.disabled = true; b.textContent = 'Starting over…';
+    post('api/project/reset').then(r => {
+      b.disabled = false; b.textContent = 'Start over'; b.classList.remove('primary');
+      if (r.error) { $('openErr').textContent = r.error; return; }
+      for (const k of Object.keys(plainDraft)) delete plainDraft[k];
+      editor.file = null; editor.dirty = false; renderedKey = ''; teamKey = ''; plainKey = '';
+      if ($('path')) $('path').value = '';
+      $('openErr').textContent = ''; $('step').textContent = 'Clean page. Bring the code to start.';
+    });
+  };
+})();
+setSrc(['code', 'git', 'example'].includes(src) ? src : 'code');
+renderSides();
+const es = new EventSource('events');
+// the page is always read fresh from disk, but the engine behind it only changes when Tandemi restarts: say so when they differ
+fetch('/api/version', { cache: 'no-store' }).then(r => (r.ok ? r.json() : {})).catch(() => ({})).then(d => {
+  if (d.running && d.running === d.onDisk) return;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:sticky;top:0;z-index:50;background:#b42318;color:#fff;padding:10px 16px;font:600 14px var(--f-body);text-align:center';
+  bar.textContent = d.running ? 'Tandemi was updated, but the old version is still running. Close the Tandemi window and run start.bat again.' : 'An older Tandemi is still running in the background, so the new version is not working yet. Close every Tandemi window and run start.bat again (or restart the computer).';
+  document.body.prepend(bar);
+});
+es.addEventListener('ai', (e) => { AIK = JSON.parse(e.data); keybar(); if (!$('settings').hidden) loadSettings(); });
+es.addEventListener('settings', () => loadSettings());
+es.addEventListener('pr', (e) => { PRS = JSON.parse(e.data); prbar(); if (!$('settings').hidden) renderSettings(); });
+es.addEventListener('project', (e) => { P = JSON.parse(e.data); if (!srcChosen && P.open) { const want = P.source === 'workspace' ? 'code' : /samples[\\/]cat-runner$/.test(P.path || '') ? 'example' : 'git'; if (want !== src) setSrc(want, false); } render(); });
+es.addEventListener('team', (e) => { T = JSON.parse(e.data); render(); });
+es.addEventListener('workspace', (e) => { WS = JSON.parse(e.data); renderWS(); });
+es.onopen = () => { if ($('step').dataset.lost) { $('step').dataset.lost = ''; renderTop(); } };
+es.onerror = () => { fetch('/api/auth/me', { cache: 'no-store' }).then(r => r.json()).then(d => { if (!d.me) location.href = '/login'; }).catch(() => {}); $('step').dataset.lost = '1'; $('step').textContent = 'Lost connection to Tandemi. Is its window still open?'; };
+</script>
+</body>
+</html>

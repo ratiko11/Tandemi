@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en" data-type="software" data-radius="sharp" data-ground="sky" data-buttons="pill" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tandemi: merge and test tool for software teams</title>
+<meta name="description" content="Tandemi merges your developers' branches by the code's structure, builds and tests the result, and sends each bug to the person whose change caused it.">
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<link rel="preload" href="assets/fonts/mona-sans-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: "Mona Sans"; src: url("assets/fonts/mona-sans-latin-standard-normal.woff2") format("woff2"); font-weight: 200 900; font-stretch: 75% 125%; font-style: normal; font-display: swap; }
+@font-face { font-family: "Geist Mono"; src: url("assets/fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+</style>
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<link rel="stylesheet" href="assets/icons/icon.css">
+<style>
+:root {
+  --p-bg: #f7f9fa; --p-surface: #ecf0f2; --p-ink: #1f3038; --p-muted: #5d6b72;
+  --p-accent: #0d7480; --p-accent-ink: #ffffff; --p-action: #0d7480; --p-action-ink: #ffffff;
+  --p-inv-bg: #1f3038; --p-inv-surface: #2c3c44; --p-inv-ink: #f7f9fa; --p-inv-muted: #9ea7ab;
+  --p-inv-accent: #f7f9fa; --p-inv-accent-ink: #1f3038; --p-inv-action: #f7f9fa; --p-inv-action-ink: #1f3038;
+  --font-display: "Mona Sans", system-ui, sans-serif;
+  --font-text: "Mona Sans", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+  --display-stretch: 104%;
+  --ly-scale: 0.96;
+}
+</style>
+<link rel="stylesheet" href="assets/ui/base.css">
+<link rel="stylesheet" href="assets/ui/window/fragment.css">
+<link rel="stylesheet" href="assets/ui/diff-review/fragment.css">
+<link rel="stylesheet" href="assets/ui/notify/fragment.css">
+<link rel="stylesheet" href="assets/ui/chat/fragment.css">
+<link rel="stylesheet" href="assets/ui/checklist/fragment.css">
+<link rel="stylesheet" href="assets/ui/code/fragment.css">
+<link rel="stylesheet" href="assets/ui/stat/fragment.css">
+<link rel="stylesheet" href="assets/ui/terminal-run/fragment.css">
+<script src="assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js"><link rel="modulepreload" href="assets/moments/lib.js"><link rel="modulepreload" href="assets/moments/marquee-row/moment.js">
+<style>
+  /* page CSS: inside visuals only (sections-library.md) */
+  .hero__media .stage { position: absolute; inset: 0; }
+  /* app-frame: the recipe's own rules */
+  .app.ui { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
+  .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  .app > .app__pane + .app__pane { border-left: 1px solid var(--u-line); }
+  .app > .app__pane > .ui-panel { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
+  @media (min-width: 1024px) and (max-width: 1279px) { .app.ui { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+  @media (max-width: 1023px) {
+    .app.ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+    .app > .app__pane--list { max-height: 252px; }
+    .app > .app__pane--list::after { display: none; }
+    .app .ui-win__side { display: none; }
+    .app .ui-win__body { grid-template-columns: minmax(0, 1fr); }
+    .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--u-line); }
+  }
+  @media (max-width: 639px) {
+    .app.ui { grid-template-rows: minmax(0, 1fr); }
+    .app > .app__pane--list { display: none; }
+    .app > .app__pane + .app__pane { border-top: 0; }
+  }
+  #features .panel { --p-h: 336px; }
+  .needs { list-style: none; margin: 0; padding: 0; }
+  .needs .ic { width: 24px; height: 24px; object-fit: contain; }
+  @media (min-width: 640px) and (max-width: 1023px) { #features .panel { --p-h: 520px; } }
+  @media (max-width: 639px) { #features .panel { --p-h: 300px; } }
+  #features .panel { overflow: hidden; }
+  #results .frame { --ratio: 100%; }
+  @media (max-width: 639px) { #results .frame { --ratio: 110%; } }
+  #languages .tools { padding: var(--s-7); }
+  .tools__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-6) var(--s-5); }
+  .tools__cell { display: grid; justify-items: center; gap: var(--s-3); text-align: center; }
+  .tools__cell .ic-tile { width: 72px; height: 72px; display: grid; place-items: center; }
+  .tools__cell .ic { width: 40px; height: 40px; object-fit: contain; }
+  @media (max-width: 639px) { .tools__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } #languages .tools { padding: var(--s-5); } .tools__cell .ic-tile { width: 64px; height: 64px; } }
+</style>
+</head>
+<body>
+<!-- type: software (developer tool)
+     deal: hero split, nav nav-mega, close close-type, footer footer-dark, rhythm dark-band (#plain), buttons pill,
+     mark wordmark, palette cool-white-slate, type mona, radius sharp, lit ground sky,
+     effect grain-gradient (hero frame), card grounds gradient-mesh (#features), no scene
+     moments: marquee-row (the last row of #languages)
+     main action: Get Tandemi for Windows (the latest GitHub release) -->
+
+<header class="nav">
+  <div class="wrap nav__bar">
+    <a class="nav__logo" href="#top">Tandemi</a>
+    <nav class="nav__links" aria-label="Main">
+      <div class="nav__item">
+        <a class="nav__link" href="#features">Product <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid">
+            <div class="menu-col span-3">
+              <p class="t-label">Merging</p>
+              <a href="#how">Merge by structure<span>Fewer conflicts than git</span></a>
+              <a href="#plain">Plain-word tests<span>A test in one sentence</span></a>
+              <a href="#languages">Languages<span>Eight, merged by structure</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Bugs</p>
+              <a href="#features">Bug routing<span>Each bug to its owner</span></a>
+              <a href="#features">Claude fixes<span>Fixed with your Claude plan</span></a>
+              <a href="#features">Pull requests<span>A result on every one</span></a>
+            </div>
+            <a class="menu-card span-3 start-10" href="#features">
+              <div class="panel">
+                <div class="stage stage--fade-br"><div class="at-corner" style="--ax:24px;--ay:24px">
+                  <div class="ui ui-notify" data-ui="notify" data-ui-still>
+                    <ul class="ui-notify__list" data-notify-list>
+                      <li class="ui-note"><span class="ui-note__ico"><img src="assets/icons/github.svg" alt="" width="14" height="14"></span><span class="ui-note__text"><span class="ui-note__title">Safe to merge<time>now</time></span><span class="ui-note__body">Pull request #12, Higher jump</span></span></li>
+                    </ul>
+                  </div>
+                </div></div>
+              </div>
+              <span class="t-card">New in 2.4: pull request checks</span>
+              <span class="t-small muted">A result on GitHub</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="nav__item"><a class="nav__link" href="#languages">Languages</a></div>
+      <div class="nav__item"><a class="nav__link" href="#results">Results</a></div>
+      <div class="nav__item"><a class="nav__link" href="#questions">Questions</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="https://github.com/ratiko11/Tandemi/releases/latest/download/Tandemi-Setup.exe">Get Tandemi for Windows</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--split" aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="hero__text span-6">
+        <p class="hero-notice">Version 2.4.2 for Windows 10 and 11</p>
+        <h1 id="hero-h">Merge and test tool for software teams</h1>
+        <p class="hero__lead">Tandemi merges your developers' branches by the code's structure, builds and tests the result, and sends each bug to the person whose change caused it.</p>
+        <div class="btn-row"><a class="btn btn--primary" href="https://github.com/ratiko11/Tandemi/releases/latest/download/Tandemi-Setup.exe">Get Tandemi for Windows<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="#how">See how it works</a></div>
+      </div>
+      <div class="hero__media span-6 start-7" data-fx="grain-gradient" data-fx-seed="7" data-fx-params='{"calmX":0.2,"calmY":0.85}' role="img" aria-label="Tandemi's merge list: four developers' branches, one merged, one checking, one with a bug that goes to Beka">
+        <div class="stage stage--fade-br"><div class="at-corner to-edge" style="--ax:56px;--ay:56px" data-ui-loop>
+          <div class="ui ui-panel ui-win" data-ui="window" data-open="Waiting" data-work="Checking" data-done="Merged">
+            <div class="ui-win__bar">
+              <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="ui-win__crumb">Cat Runner <i>/</i> <b>Team merge</b></span>
+              <span class="ui-spacer"></span>
+              <span class="ui-win__search" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><span class="ui-win__ph">Search</span><span class="ui-kbd">/</span></span>
+            </div>
+            <div class="ui-win__body">
+              <nav class="ui-win__side" aria-hidden="true">
+                <span class="ui-win__nav is-on"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="5" cy="4" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="6" r="1.5"/><path d="M5 5.5v5M11 7.5c0 2.5-6 1.5-6 3"/></svg>Branches<em>4</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></svg>Bugs<em>1</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M4 3v10M12 3v10M4 8h8"/></svg>Tests<em>9</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg>Final code</span>
+                <span class="ui-win__label">Teams</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Personal</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>Cat Runner</span>
+              </nav>
+              <div class="ui-win__main">
+                <div class="ui-win__cols" aria-hidden="true"><span>Developer</span><span>Branch</span><span>Status</span><span>Age</span></div>
+                <ul class="ui-win__rows">
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">AB</span><span class="ui-win__who">Ana Beridze</span><span class="ui-win__sub">dev-ana · jump height</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">4m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">BK</span><span class="ui-win__who">Beka Kapanadze</span><span class="ui-win__sub">dev-beka · phone levels</span><span class="ui-win__st is-you" data-st>1 bug</span><span class="ui-win__age">4m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">GT</span><span class="ui-win__who">Gio Tsereteli</span><span class="ui-win__sub">dev-gio · shop prices</span><span class="ui-win__st" data-st>Waiting</span><span class="ui-win__age">2m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">NM</span><span class="ui-win__who">Nika Maisuradze</span><span class="ui-win__sub">dev-nika · sound</span><span class="ui-win__st" data-st>Waiting</span><span class="ui-win__age">1m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">RS</span><span class="ui-win__who">Rati Shetsiruli</span><span class="ui-win__sub">main · starting code</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">9m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">AB</span><span class="ui-win__who">Ana Beridze</span><span class="ui-win__sub">dev-ana · dash move</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">12m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">BK</span><span class="ui-win__who">Beka Kapanadze</span><span class="ui-win__sub">dev-beka · level select</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">18m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">GT</span><span class="ui-win__who">Gio Tsereteli</span><span class="ui-win__sub">dev-gio · coin sounds</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">25m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">NM</span><span class="ui-win__who">Nika Maisuradze</span><span class="ui-win__sub">dev-nika · music volume</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">31m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">RS</span><span class="ui-win__who">Rati Shetsiruli</span><span class="ui-win__sub">main · test setup</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">40m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">AB</span><span class="ui-win__who">Ana Beridze</span><span class="ui-win__sub">dev-ana · double jump</span><span class="ui-win__st is-done" data-st>Merged</span><span class="ui-win__age">1h</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section ground-inverse" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="how-h">Every merge, checked and routed</h2>
+        <p>Pick the branches. Tandemi merges them, runs your build and tests, and opens each bug with its owner and a fix you can apply.</p>
+      </div>
+      <div class="ui app fill" role="img" aria-label="Tandemi's pull request list beside the merged Cat.cs, where a clash between Ana's and Beka's changes is routed to Beka with a suggested fix" data-ui-pause-host>
+        <div class="app__pane app__pane--list">
+          <div class="ui ui-panel ui-win" data-ui="window" data-ui-still data-open="Open" data-work="Checking" data-done="Safe">
+            <div class="ui-win__bar">
+              <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="ui-win__crumb"><img loading="lazy" decoding="async" class="ui-brand" src="assets/icons/github.svg" alt="" width="14" height="14">cat-runner <i>/</i> <b>Pull requests</b></span>
+              <span class="ui-spacer"></span>
+            </div>
+            <div class="ui-win__body">
+              <nav class="ui-win__side" aria-hidden="true">
+                <span class="ui-win__nav is-on"><svg class="ui-icon" viewBox="0 0 16 16"><circle cx="5" cy="4" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/><path d="M5 5.5v5M11 10.5V7c0-1.5-1-2.5-2.5-2.5H7"/></svg>Open<em>9</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></svg>Breaks<em>2</em></span>
+                <span class="ui-win__nav"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg>Safe<em>7</em></span>
+                <span class="ui-win__label">Branches</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>main</span>
+                <span class="ui-win__nav"><span class="ui-win__hash">#</span>release</span>
+              </nav>
+              <div class="ui-win__main">
+                <div class="ui-win__cols" aria-hidden="true"><span>Author</span><span>Pull request</span><span>Status</span><span>Age</span></div>
+                <ul class="ui-win__rows">
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">BK</span><span class="ui-win__who">Beka Kapanadze</span><span class="ui-win__sub">#14 Phone levels · +38 −12</span><span class="ui-win__st is-you" data-st>Breaks 1</span><span class="ui-win__age">3m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">AB</span><span class="ui-win__who">Ana Beridze</span><span class="ui-win__sub">#12 Higher jump · +9 −4</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">8m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">GT</span><span class="ui-win__who">Gio Tsereteli</span><span class="ui-win__sub">#15 Shop prices · +61 −20</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">15m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">NM</span><span class="ui-win__who">Nika Maisuradze</span><span class="ui-win__sub">#16 Sound volume · +14 −3</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">21m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="5">RS</span><span class="ui-win__who">Rati Shetsiruli</span><span class="ui-win__sub">#11 Dash cooldown · +7 −7</span><span class="ui-win__st is-you" data-st>Breaks 1</span><span class="ui-win__age">34m</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="1">AB</span><span class="ui-win__who">Ana Beridze</span><span class="ui-win__sub">#10 Rename RunSpeed · +5 −5</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">1h</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="4">GT</span><span class="ui-win__who">Gio Tsereteli</span><span class="ui-win__sub">#9 Coin sounds · +22 −0</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">2h</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="3">BK</span><span class="ui-win__who">Beka Kapanadze</span><span class="ui-win__sub">#8 Level select · +40 −9</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">3h</span></li>
+                  <li class="ui-win__row" data-row><span class="ui-avatar" data-tone="2">NM</span><span class="ui-win__who">Nika Maisuradze</span><span class="ui-win__sub">#7 Menu music · +12 −1</span><span class="ui-win__st is-done" data-st>Safe</span><span class="ui-win__age">5h</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="app__pane app__pane--open" data-ui-loop>
+          <div class="ui ui-panel ui-diff" data-ui="diff-review">
+            <div class="ui-diff__head">
+              <svg class="ui-icon ui-diff__fold" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.25 3.5 3.5 3.5-3.5"/></svg>
+              <span class="ui-diff__tool" aria-hidden="true"><img loading="lazy" decoding="async" width="24" height="24" src="assets/icons/c-sharp.svg" alt=""></span>
+              <span class="ui-diff__repo">cat-runner</span><i class="ui-diff__slash" aria-hidden="true">/</i>
+              <span class="ui-diff__path"><span class="ui-diff__dir">src/CatGame.Core/</span><b>Cat.cs</b></span>
+              <span class="ui-spacer"></span>
+              <span class="ui-diff__stat"><b class="is-add"><span class="ui-diff__was">+3</span><span class="ui-diff__now">+4</span></b><b class="is-del"><span class="ui-diff__was">&minus;2</span><span class="ui-diff__now">&minus;3</span></b><span class="ui-diff__bar" aria-hidden="true"><i class="is-add"></i><i class="is-add"></i><i class="is-add"></i><i class="is-del"></i><i class="is-del"></i></span></span>
+            </div>
+            <div class="ui-diff__hunk"><span>@@ -6,16 +6,17 @@</span> <em class="ui-diff__sig">public class Cat {</em></div>
+            <div class="ui-diff__lines">
+              <div class="ui-diff__ln"><i>6</i><i>6</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> Speed = <span class="n">6f</span>;</span></div>
+              <div class="ui-diff__ln is-del"><i>7</i><i></i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> <mark class="ui-diff__w">RunSpeed</mark> = <span class="n">6f</span>;</span></div>
+              <div class="ui-diff__ln is-add"><i></i><i>7</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> <mark class="ui-diff__w">DashSpeed</mark> = <span class="n">11f</span>;</span></div>
+              <div class="ui-diff__ln is-target" data-diff-target><i>8</i><i>8</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> JumpPower = <mark class="ui-diff__w"><span class="n">15f</span></mark>;</span></div>
+              <div class="ui-diff__sug" data-diff-sug><div class="ui-diff__ln is-add"><i></i><i>8</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> JumpPower = <mark class="ui-diff__w"><span class="n">14f</span></mark>;</span></div></div>
+              <div class="ui-diff__thread">
+                <div class="ui-diff__by">
+                  <span class="ui-avatar" data-tone="4">T</span>
+                  <span class="ui-diff__name">Bug 3 to Beka</span>
+                  <span class="ui-diff__time">now</span>
+                  <span class="ui-spacer"></span>
+                  <span class="ui-diff__act" data-diff-act>
+                    <button class="ui-btn ui-btn--sm ui-diff__apply" type="button" tabindex="-1" data-diff-apply><span class="ui-diff__lbl">Fix with Claude</span><i class="ui-diff__spin" aria-hidden="true"></i></button>
+                    <span class="ui-chip ui-diff__done"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 8.4 2.6 2.6L12 5.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Tests pass</span>
+                  </span>
+                </div>
+                <div class="ui-diff__msg">Clashes with Ana's jump: the cat passes <code>World.ScreenTop</code>. Try <code>14f</code>.</div>
+              </div>
+              <div class="ui-diff__ln"><i>9</i><i>9</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> Gravity = <span class="n">30f</span>;</span></div>
+              <div class="ui-diff__ln"><i>10</i><i>10</i><span class="ui-diff__code" data-i="1"></span></div>
+              <div class="ui-diff__ln"><i>11</i><i>11</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public float</span> <span class="f">MaxJumpHeight</span>()</span></div>
+              <div class="ui-diff__ln"><i>12</i><i>12</i><span class="ui-diff__code" data-i="2"><span class="ui-diff__ind">        </span>=&gt; JumpPower * JumpPower / (<span class="n">2</span> * Gravity);</span></div>
+              <div class="ui-diff__ln"><i>13</i><i>13</i><span class="ui-diff__code" data-i="1"></span></div>
+              <div class="ui-diff__ln is-del"><i>14</i><i></i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public void</span> <span class="f">Run</span>(<span class="k">float</span> dt) =&gt; X += <mark class="ui-diff__w">RunSpeed</mark> * dt;</span></div>
+              <div class="ui-diff__ln is-add"><i></i><i>14</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public void</span> <span class="f">Run</span>(<span class="k">float</span> dt) =&gt; X += <mark class="ui-diff__w">Speed</mark> * dt;</span></div>
+              <div class="ui-diff__ln is-add"><i></i><i>15</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public void</span> <span class="f">Dash</span>(<span class="k">float</span> dt) =&gt; X += DashSpeed * dt;</span></div>
+              <div class="ui-diff__ln"><i>15</i><i>16</i><span class="ui-diff__code" data-i="1"></span></div>
+              <div class="ui-diff__ln"><i>16</i><i>17</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public void</span> <span class="f">Jump</span>()</span></div>
+              <div class="ui-diff__ln"><i>17</i><i>18</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span>{</span></div>
+              <div class="ui-diff__ln"><i>18</i><i>19</i><span class="ui-diff__code" data-i="2"><span class="ui-diff__ind">        </span><span class="k">if</span> (!OnGround) <span class="k">return</span>;</span></div>
+              <div class="ui-diff__ln"><i>19</i><i>20</i><span class="ui-diff__code" data-i="2"><span class="ui-diff__ind">        </span>VelocityY = JumpPower;</span></div>
+              <div class="ui-diff__ln"><i>20</i><i>21</i><span class="ui-diff__code" data-i="2"><span class="ui-diff__ind">        </span>OnGround = <span class="k">false</span>;</span></div>
+              <div class="ui-diff__ln"><i>21</i><i>22</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span>}</span></div>
+              <div class="ui-diff__ln"><i>22</i><i>23</i><span class="ui-diff__code" data-i="1"></span></div>
+              <div class="ui-diff__ln"><i>23</i><i>24</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span><span class="k">public void</span> <span class="f">Land</span>(<span class="k">float</span> groundY)</span></div>
+              <div class="ui-diff__ln"><i>24</i><i>25</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span>{</span></div>
+              <div class="ui-diff__ln"><i>25</i><i>26</i><span class="ui-diff__code" data-i="2"><span class="ui-diff__ind">        </span>Y = groundY; VelocityY = <span class="n">0</span>;</span></div>
+              <div class="ui-diff__ln"><i>26</i><i>27</i><span class="ui-diff__code" data-i="2"><span class="ui-diff__ind">        </span>OnGround = <span class="k">true</span>;</span></div>
+              <div class="ui-diff__ln"><i>27</i><i>28</i><span class="ui-diff__code" data-i="1"><span class="ui-diff__ind">    </span>}</span></div>
+              <div class="ui-diff__ln"><i>28</i><i>29</i><span class="ui-diff__code" data-i="0">}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section g2" id="features" aria-labelledby="features-h" style="--hm: 3">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head">
+          <h2 id="features-h">What Tandemi does. <span class="muted">Merge, check, route and fix, in one window.</span></h2>
+        </div>
+        <div class="grid">
+          <article class="card card--row card--open span-6">
+            <h3>Build and test checks</h3>
+            <p>Tandemi builds and tests each branch alone and the merged code, so it knows which change broke what.</p>
+            <div class="panel" data-fx="gradient-mesh" data-fx-seed="21" data-fx-params='{"speed":0,"drift":0,"calmY":0.95}' data-fx-palette='{"bg":"#c6d3df","surface":"#d6e0e9","ink":"#25303a","accent":"#3f6a92"}'>
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:440px;--ax:max(24px, 50% - 220px);--ay:40px;--ay-sm:32px" data-ui-loop>
+                <div class="ui ui-panel ui-term" data-ui="terminal-run">
+                  <div class="ui-term__head">
+                    <span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                    <span class="ui-term__title">cat-runner</span>
+                    <span class="ui-meta">Tandemi</span>
+                    <span class="ui-spacer"></span>
+                    <span class="ui-chip ui-chip--plain ui-term__branch"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 2.6-6 1.8-6 4"/></svg>3 branches</span>
+                  </div>
+                  <div class="ui-term__screen" data-term-screen>
+                    <div class="ui-term__track" data-term-track>
+                      <div class="ui-term__ln ui-term__cmd"><span class="ui-term__cwd">~/<span class="ui-term__up">games/</span>cat-runner</span><span class="ui-term__sig">$</span><span class="ui-term__typed" data-term-cmd>dotnet test</span></div>
+                      <div class="ui-term__ln ui-term__meter" data-term-out data-term-meter><span class="ui-term__bar" style="--p:1"><i></i></span><span class="ui-term__count" data-term-count>4 of 4 versions</span></div>
+                      <div class="ui-term__ln ui-term__log" data-term-out data-term-step><svg class="ui-term__tick" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg><span class="ui-term__path">dev-ana alone</span><span class="ui-term__n">7 tests</span><span class="ui-term__t">1.92s</span></div>
+                      <div class="ui-term__ln ui-term__log" data-term-out data-term-step><svg class="ui-term__tick" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg><span class="ui-term__path">dev-beka alone</span><span class="ui-term__n">7 tests</span><span class="ui-term__t">1.87s</span></div>
+                      <div class="ui-term__ln ui-term__log" data-term-out data-term-step><svg class="ui-term__tick" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg><span class="ui-term__path">dev-gio alone</span><span class="ui-term__n">7 tests</span><span class="ui-term__t">1.95s</span></div>
+                      <div class="ui-term__ln ui-term__log" data-term-out data-term-step><svg class="ui-term__tick" viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg><span class="ui-term__path">all merged</span><span class="ui-term__n">9 tests</span><span class="ui-term__t">2.31s</span></div>
+                      <div class="ui-term__ln ui-term__gap" data-term-out aria-hidden="true"></div>
+                      <div class="ui-term__ln ui-term__sum" data-term-out><span class="ui-term__key">Alone</span><span class="ui-term__val">21 passed</span><span class="ui-term__dim">(21)</span></div>
+                      <div class="ui-term__ln ui-term__sum" data-term-out><span class="ui-term__key">Merged</span><span class="ui-term__val">8 passed</span><span class="ui-term__dim">(9)</span></div>
+                      <div class="ui-term__ln ui-term__sum" data-term-out><span class="ui-term__key">Bug 3</span><span class="ui-term__val">to Beka</span></div>
+                      <div class="ui-term__ln ui-term__done" data-term-out data-term-done><span class="ui-term__ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 8.3 2.4 2.4 4.6-5"/></svg></span><b>Done</b><span class="ui-term__dim">in 8.05s</span></div>
+                      <div class="ui-term__ln ui-term__cmd" data-term-next><span class="ui-term__cwd">~/<span class="ui-term__up">games/</span>cat-runner</span><span class="ui-term__sig">$</span><span class="ui-term__typed"></span><i class="ui-term__caret" aria-hidden="true"></i></div>
+                    </div>
+                  </div>
+                </div>
+              </div></div>
+            </div>
+          </article>
+          <article class="card card--row card--open span-6">
+            <h3>Bug routing after each merge</h3>
+            <p>When two changes clash, both people see it, with the test that fails and the lines that cause it.</p>
+            <div class="panel" data-fx="gradient-mesh" data-fx-seed="34" data-fx-params='{"speed":0,"drift":0,"calmY":0.95}' data-fx-palette='{"bg":"#cdd6c6","surface":"#dce3d6","ink":"#262d24","accent":"#6c8e63"}'>
+              <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:380px;--ax:max(24px, 50% - 190px);--ay:calc(100% - 180px);--ay-sm:calc(100% - 180px)">
+                <div class="ui ui-notify" data-ui="notify">
+                  <ul class="ui-notify__list" data-notify-list>
+                    <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="3">BK</span><span class="ui-note__text"><span class="ui-note__title">Bug 3 goes to Beka<time>now</time></span><span class="ui-note__body">Clashes with Ana's JumpPower change</span></span><span class="ui-btn ui-btn--sm ui-note__btn">Open</span></li>
+                    <li class="ui-note"><span class="ui-avatar ui-note__av" data-tone="1">AB</span><span class="ui-note__text"><span class="ui-note__title">Ana's branch passes<time>2m</time></span><span class="ui-note__body">Builds, 7 of 7 tests pass</span></span></li>
+                    <li class="ui-note"><span class="ui-note__ico"><svg class="ui-icon" viewBox="0 0 16 16"><path d="m3.5 8.4 2.8 2.8 6.2-6.4"/></svg></span><span class="ui-note__text"><span class="ui-note__title">Merged without conflicts<time>3m</time></span><span class="ui-note__body">Cat.cs, World.cs and 12 more files</span></span></li>
+                  </ul>
+                </div>
+              </div></div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="grid">
+        <article class="card card--row card--open span-6">
+          <h3>Claude fixes for failing tests</h3>
+          <p>Claude Code fixes the bug with your own Claude plan. Tandemi keeps the fix only if the tests pass.</p>
+          <div class="panel" data-fx="gradient-mesh" data-fx-seed="55" data-fx-params='{"speed":0,"drift":0,"calmY":0.95}' data-fx-palette='{"bg":"#d9ccb7","surface":"#e9e0d2","ink":"#2a2622","accent":"#a8794a"}'>
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:400px;--ax:max(24px, 50% - 200px);--ay:56px;--ay-sm:56px">
+              <div class="ui ui-panel ui-chat" data-ui="chat">
+                <div class="ui-head"><span class="ui-diff__tool" aria-hidden="true"><img loading="lazy" decoding="async" src="assets/icons/claude.svg" alt="" width="18" height="18"></span><div class="ui-title">Claude</div><span class="ui-chat__online">Fixing</span><span class="ui-spacer"></span></div>
+                <div class="ui-chat__body">
+                  <div class="ui-chat__day">Today, 14:02</div>
+                  <div class="ui-msg ui-msg--me" data-chat-q><span class="ui-msg__text">Fix bug 3 in Cat Runner</span></div>
+                  <div class="ui-msg ui-msg--bot" data-chat-a>
+                    <span class="ui-agent ui-msg__av" aria-hidden="true"></span>
+                    <span class="ui-msg__col">
+                      <span class="ui-chat__typing" aria-hidden="true"><i></i><i></i><i></i></span>
+                      <span class="ui-chat__answer">Set JumpPower to <b>14</b>: the cat still reaches the ledge and stays on Beka's smaller screen.</span>
+                      <span class="ui-chat__srcs"><span class="ui-chat__src"><svg class="ui-icon" viewBox="0 0 16 16"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3"/></svg>GameTests.cs</span></span>
+                    </span>
+                  </div>
+                </div>
+                <div class="ui-chat__input"><span class="ui-chat__ph">Write a message</span><span class="ui-chat__send" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 13V3.5M3.8 7.5 8 3.3l4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+              </div>
+            </div></div>
+          </div>
+        </article>
+        <article class="card card--row card--open span-6">
+          <h3>Merge results on pull requests</h3>
+          <p>Every new pull request is merged with main and the others, and the result is posted on GitHub.</p>
+          <div class="panel" data-fx="gradient-mesh" data-fx-seed="89" data-fx-params='{"speed":0,"drift":0,"calmY":0.95}' data-fx-palette='{"bg":"#c6d3df","surface":"#d6e0e9","ink":"#25303a","accent":"#3f6a92"}'>
+            <div class="stage stage--fade-b"><div class="at-rise fit" style="--fit-max:340px;--ax:max(24px, 50% - 170px);--ay:40px;--ay-sm:40px">
+              <div class="ui ui-panel ui-checks" data-ui="checklist">
+                <div class="ui-checks__head">
+                  <img loading="lazy" decoding="async" src="assets/icons/github.svg" alt="" width="16" height="16">
+                  <div class="ui-title">Pull request #14</div>
+                  <span class="ui-spacer"></span>
+                  <div class="ui-meta" data-checks-count>2 of 5</div>
+                </div>
+                <div class="ui-checks__bar"><i data-checks-bar style="--k:0.4"></i></div>
+                <ul class="ui-checks__list">
+                  <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Merged with main</span></li>
+                  <li class="ui-check is-done"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Merged with #12 and #15</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Built and tested</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Bug sent to its owner</span></li>
+                  <li class="ui-check"><span class="ui-check__box"><svg viewBox="0 0 16 16"><path d="m4.5 8.2 2.3 2.3 4.7-5"/></svg></span><span class="ui-check__label">Comment posted on GitHub</span></li>
+                </ul>
+              </div>
+            </div></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="plain" aria-labelledby="plain-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-6 stack-5">
+          <h2 id="plain-h">Tests written in plain words</h2>
+          <p class="t-lead">Write what must stay true in one sentence. Tandemi turns it into a real test in your project's test framework and runs it on every merge.</p>
+          <ul class="stack-3">
+            <li>Follows renames in your code</li>
+            <li>Runs in team merges too</li>
+            <li>Saved with the project</li>
+          </ul>
+          <a class="link" href="#languages">See the supported languages</a>
+        </div>
+        <div class="frame frame--split span-6 start-7" data-fx="gradient-mesh" data-fx-seed="144" data-fx-params='{"speed":0,"drift":0,"calmY":0.95}' data-fx-palette='{"bg":"#c6d3df","surface":"#d6e0e9","ink":"#25303a","accent":"#3f6a92"}'>
+          <div class="stage stage--fade-b"><div class="at-rise to-edge" style="--w:480px;--ax:max(24px, 50% - 240px);--ay:56px" data-ui-loop>
+            <div class="ui ui-panel ui-code" data-ui="code">
+              <div class="ui-code__tabs">
+                <span class="ui-code__tab is-on"><i class="ui-code__lang">C#</i>PlainScreen.cs</span>
+                <span class="ui-code__tab"><i class="ui-code__lang">C#</i>Cat.cs</span>
+                <span class="ui-spacer"></span>
+                <span class="ui-chip ui-chip--plain ui-code__chip" data-code-chip>Passes</span>
+              </div>
+<pre class="ui-code__pre"><code><span class="ui-code__ln" data-n="1"><span class="c">// The cat stays on the screen</span></span>
+<span class="ui-code__ln" data-n="2">[<span class="f">Test</span>]</span>
+<span class="ui-code__ln" data-n="3"><span class="k">public void</span> <span class="f">CatStaysOnScreen</span>()</span>
+<span class="ui-code__ln" data-n="4">{</span>
+<span class="ui-code__ln" data-n="5" data-note="Uses the game's own World.">  <span class="k">var</span> world = <span class="k">new</span> <span class="f">World</span>();</span>
+<span class="ui-code__ln is-mark" data-n="6">  <span class="k">var</span> cat = <span class="k">new</span> <span class="f">Cat</span>();</span>
+<span class="ui-code__ln" data-n="7" data-note="Checks the highest jump.">  <span class="k">var</span> top = cat.<span class="f">MaxJumpHeight</span>();</span>
+<span class="ui-code__ln" data-n="8">  Assert.<span class="f">True</span>(top &lt;= world.ScreenTop);</span>
+<span class="ui-code__ln" data-n="9">}</span>
+<span class="ui-code__ln" data-n="10"> </span>
+<span class="ui-code__ln" data-n="11"><span class="c">// Every dog starts slower than the cat</span></span>
+<span class="ui-code__ln" data-n="12">[<span class="f">Test</span>]</span>
+<span class="ui-code__ln" data-n="13"><span class="k">public void</span> <span class="f">DogsStartSlower</span>()</span>
+<span class="ui-code__ln" data-n="14">{</span>
+<span class="ui-code__ln" data-n="15">  <span class="k">var</span> cat = <span class="k">new</span> <span class="f">Cat</span>();</span>
+<span class="ui-code__ln" data-n="16">  <span class="k">foreach</span> (<span class="k">var</span> dog <span class="k">in new</span> <span class="f">World</span>().Dogs)</span>
+<span class="ui-code__ln" data-n="17">  Assert.<span class="f">True</span>(dog.Speed &lt; cat.Speed);</span>
+<span class="ui-code__ln" data-n="18">}</span></code></pre>
+              <div class="ui-code__hint" data-code-hint><span class="ui-dot"></span><span data-code-text>Written from your sentence, in NUnit.</span></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="languages" style="--hm: 2" aria-labelledby="languages-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="languages-h">Eight languages and your tools</h2>
+        <p>C#, Java, Python, Go, TypeScript, JavaScript, C++ and C are merged by structure. Tandemi builds with your own tools and works with git, GitHub and Claude.</p>
+      </div>
+      <div class="frame tools" role="img" aria-label="Tools Tandemi works with: git, GitHub, Claude Code, Claude Desktop, the .NET SDK, Java, Python, Go, Node.js and TypeScript">
+        <ul class="tools__grid" aria-hidden="true"><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/git.svg" alt=""></span><span class="t-label">git</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic ic-ink" src="assets/icons/github.svg" alt=""></span><span class="t-label">GitHub</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/claude-code.svg" alt=""></span><span class="t-label">Claude Code</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/claude.svg" alt=""></span><span class="t-label">Claude Desktop</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/dotnet.svg" alt=""></span><span class="t-label">.NET SDK</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/java.svg" alt=""></span><span class="t-label">Java</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/python.svg" alt=""></span><span class="t-label">Python</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/go.svg" alt=""></span><span class="t-label">Go</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/nodejs.svg" alt=""></span><span class="t-label">Node.js</span></li><li class="tools__cell"><span class="ic-tile ic-56"><img loading="lazy" decoding="async" width="24" height="24" class="ic" src="assets/icons/typescript.svg" alt=""></span><span class="t-label">TypeScript</span></li></ul>
+      </div>
+      <div style="margin-top: var(--s-6)" data-moment="marquee-row" data-moment-opts='{"speed": 36}'>
+        <ul class="mo-mq__track" aria-label="Languages and test frameworks"><li>C#</li><li>Java</li><li>Python</li><li>Go</li><li>TypeScript</li><li>JavaScript</li><li>C++</li><li>C</li><li>NUnit</li><li>xUnit</li><li>JUnit</li><li>pytest</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="results" aria-labelledby="results-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-6 stack-5">
+          <h2 id="results-h">Tested on 2,312 real merges</h2>
+          <p class="t-lead">We replayed merges from eight open-source projects where git stopped with a conflict, and compared Tandemi's result with what the developers committed.<sup><a href="#note-1">1</a></sup></p>
+          <ul class="stack-3">
+            <li>1,271 code files where git stopped</li>
+            <li>492 merged without help, 39%</li>
+            <li>250 exactly as the developers wrote them</li>
+          </ul>
+          <p class="t-small" id="note-1">1. Projects: MonoGame, Jellyfin, Vue, Flask, Requests, Axios, Gin and Gson, October 2026. The scripts are in Tandemi's bench folder.</p>
+        </div>
+        <div class="frame frame--split span-6 start-7">
+          <div class="stage stage--fade-b"><div class="at-rise fit to-edge" style="--fit-max:460px;--ax:max(24px, 50% - 230px);--ay:56px;--ay-sm:32px">
+            <div class="ui ui-panel ui-stat" data-ui="stat" data-ui-still data-ui-opts='{"fill":true}' data-from="0" data-to="39" data-suffix="%" data-values="29,50,36,30,35,44,65,50">
+              <div class="ui-stat__head">
+                <div class="ui-stat__top">
+                  <span class="ui-stat__label">Merged without help</span>
+                  <span class="ui-stat__range">8 projects</span>
+                </div>
+                <div class="ui-stat__line">
+                  <span class="ui-stat__num" data-stat-num>39%</span>
+                  <span class="ui-chip ui-chip--plain ui-stat__delta">git: 0%</span>
+                  <span class="ui-stat__sub">of 1,271 files</span>
+                </div>
+              </div>
+              <div class="ui-stat__chart">
+                <svg class="ui-stat__svg" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+                  <path class="ui-stat__grid" d="M0 30.5H400M0 60.5H400M0 90.5H400"/>
+                  <path class="ui-stat__cover" fill-rule="evenodd" d=""/>
+                  <g class="ui-stat__bars"></g>
+                </svg>
+                <div class="ui-stat__axis" aria-hidden="true"><span>MonoGame</span><span>Requests</span><span>Gson</span></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="questions" style="--hm: 2" aria-labelledby="questions-h">
+    <div class="wrap">
+      <div class="grid">
+        <div class="span-6 stack-4">
+          <h2 id="questions-h">Questions</h2>
+          <p class="t-lead">What Tandemi needs on your computer:</p>
+          <ul class="needs">
+            <li class="ic-row"><span class="ic-tile ic-40"><img loading="lazy" decoding="async" width="40" height="40" class="ic" src="assets/icons/windows.svg" alt=""></span><span>Windows 10 or 11</span></li>
+            <li class="ic-row"><span class="ic-tile ic-40"><img loading="lazy" decoding="async" width="40" height="40" class="ic" src="assets/icons/git.svg" alt=""></span><span>git, to open projects and branches</span></li>
+            <li class="ic-row"><span class="ic-tile ic-40"><img loading="lazy" decoding="async" width="40" height="40" class="ic" src="assets/icons/dotnet.svg" alt=""></span><span>Your build tools, such as the .NET SDK</span></li>
+          </ul>
+          <a class="link" href="https://github.com/ratiko11/Tandemi/issues">Ask on GitHub</a>
+        </div>
+        <div class="faq span-6 start-7">
+          <div class="faq__item"><h3>Does Tandemi change my main branch?</h3><p>No. It merges in its own copy. You save the result as a new branch or a .zip and merge it yourself.</p></div>
+                    <div class="faq__item"><h3>Do I need an API key for the AI fixes?</h3><p>No. Tandemi uses Claude Code with your Claude plan. An Anthropic API key works too.</p></div>
+          <div class="faq__item"><h3>Where does Tandemi keep my code?</h3><p>It stays on your computer. Only an AI fix sends the bug and its file to Claude, and the pull request check talks to GitHub.</p></div>
+          <div class="faq__item"><h3>Can my team use Tandemi together?</h3><p>Yes. Make a team, invite people with a link and give each a role. Teammates on the same network open it in their browser.</p></div>
+          <div class="faq__item"><h3>Does Tandemi work with GitLab?</h3><p>Merging works with any git project. The pull request comments work with GitHub for now.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing footer--dark ground-inverse" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--type">
+      <div class="section-head">
+        <h2 id="close-h">Merge your team's work with fewer surprises</h2>
+        <p class="t-small muted">Version 2.4.2 for Windows 10 and 11.</p>
+      </div>
+      <a class="btn btn--primary btn--xl btn--wide" href="https://github.com/ratiko11/Tandemi/releases/latest/download/Tandemi-Setup.exe">Get Tandemi for Windows<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top">Tandemi</a>
+          <p class="footer__lede">Merges, tests and routes your team's code.</p>
+        </div>
+        <div class="span-2 footer__col"><h4>Product</h4><ul><li><a href="#how">How it works</a></li><li><a href="#features">Features</a></li><li><a href="#plain">Plain-word tests</a></li></ul></div>
+        <div class="span-2 footer__col"><h4>Languages</h4><ul><li><a href="#languages">Supported</a></li><li><a href="#languages">Tools</a></li></ul></div>
+        <div class="span-2 footer__col"><h4>Results</h4><ul><li><a href="#results">Benchmark</a></li><li><a href="#note-1">Method</a></li></ul></div>
+        <div class="span-2 footer__col"><h4>Questions</h4><ul><li><a href="#questions">Answers</a></li><li><a href="https://github.com/ratiko11/Tandemi/issues">Ask on GitHub</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 Tandemi</span>
+        <div class="socials"></div>
+        <span class="credits">Product names and logos are trademarks of their owners.</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+</body>
+</html>

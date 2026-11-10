@@ -1,0 +1,2 @@
+Mona Sans and Geist Mono are licensed under the SIL Open Font License 1.1 (https://openfontlicense.org).
+Mona Sans: Copyright GitHub, Inc. Geist Mono: Copyright Vercel, Inc.

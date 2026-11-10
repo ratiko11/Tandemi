@@ -1,0 +1,29 @@
+# Put this file in your project as  .github/workflows/tandemi.yml
+# Every pull request then gets a Tandemi check and one comment that says exactly who has to fix what.
+name: Tandemi
+
+on:
+  pull_request:
+
+permissions:
+  contents: write        # to push Tandemi's merge branch when git can't merge but Tandemi can
+  pull-requests: write   # to comment on the pull request
+  issues: write
+
+jobs:
+  tandemi:
+    # windows-latest for WinForms / WPF apps; ubuntu-latest is fine for MonoGame DesktopGL, web and Python projects
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                                   # Tandemi needs the history to find where the branches split
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-dotnet@v4                      # for C# projects (MonoGame, WinForms, WPF)
+        with:
+          dotnet-version: '10.0.x'                         # the .NET version your project uses
+
+      - uses: ratiko11/tandemi@main                        # Tandemi, from its own GitHub repo
+        with:
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: lets the agents combine conflicts and fix bugs

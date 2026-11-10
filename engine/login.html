@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Tandemi</title>
+<script>try { const l = JSON.parse(localStorage.getItem('tandemi-look') || '{}'); if (l.theme && l.theme !== 'system') document.documentElement.dataset.theme = l.theme; if (l.style) document.documentElement.dataset.style = l.style; } catch (e) {}</script>
+<style>
+@font-face { font-family: "Unbounded"; src: url(/fonts/unbounded-latin-wght-normal.woff2) format("woff2"); font-weight: 200 900; font-display: swap; }
+@font-face { font-family: "Lexend"; src: url(/fonts/lexend-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
+:root { --bg: #EDE8FF; --surface: #fff; --ink: #17142B; --muted: #5C5878; --edge: #17142B; --line: #D9D3F2; --a-fill: #FF6FAE; --b-fill: #2EC4E8; --sun: #FFD23F; --fail: #D32F2F; --pop: 5px 5px 0 var(--edge); --bw: 2.5px; --f-display: "Unbounded", "Segoe UI", sans-serif; --f-body: "Lexend", "Segoe UI", sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1B1730; --surface: #272240; --ink: #F2EEFF; --muted: #A7A1CC; --edge: #0B0916; --line: #3A3460; --fail: #FF8A80; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #1B1730; --surface: #272240; --ink: #F2EEFF; --muted: #A7A1CC; --edge: #0B0916; --line: #3A3460; --fail: #FF8A80; color-scheme: dark; }
+:root[data-style="calm"] { --bw: 1px; --pop: none; --edge: var(--line); --f-display: "Lexend", "Segoe UI", sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+main { width: min(420px, 100%); display: grid; gap: 18px; }
+.logo { display: flex; align-items: center; gap: 12px; font: 800 28px var(--f-display); letter-spacing: -.02em; }
+.logo i { width: 44px; height: 44px; border-radius: 13px; background: var(--sun); color: #17142B; border: var(--bw) solid var(--edge); box-shadow: 3px 3px 0 var(--edge); display: grid; place-items: center; font: 800 20px var(--f-body); font-style: normal; }
+:root[data-style="calm"] .logo i { box-shadow: none; }
+.card { background: var(--surface); border: var(--bw) solid var(--edge); border-radius: 20px; box-shadow: var(--pop); padding: 22px; display: grid; gap: 12px; }
+h1 { margin: 0; font: 800 21px var(--f-display); letter-spacing: -.01em; }
+p { margin: 0; color: var(--muted); font-size: 14px; }
+label { display: grid; gap: 4px; font-size: 13.5px; font-weight: 600; }
+input { font: 15px var(--f-body); padding: 10px 12px; border-radius: 12px; border: 2px solid var(--edge); background: var(--surface); color: var(--ink); }
+:root[data-style="calm"] input { border-width: 1px; }
+button { font: 700 15px var(--f-body); padding: 11px 16px; border-radius: 12px; border: var(--bw) solid var(--edge); background: var(--a-fill); color: #17142B; box-shadow: 3px 3px 0 var(--edge); cursor: pointer; }
+:root[data-style="calm"] button { box-shadow: none; }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--b-fill); outline-offset: 2px; }
+.err { color: var(--fail); font-size: 14px; min-height: 1.2em; }
+.switch { font-size: 14px; color: var(--muted); } .switch a { color: var(--ink); font-weight: 600; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo"><i aria-hidden="true">⇄</i>Tandemi</div>
+  <div class="card" id="invited" hidden><p>You're invited to</p><h1 id="invTeam"></h1><p id="invInfo"></p></div>
+  <form class="card" id="in" novalidate>
+    <h1>Sign in</h1>
+    <p id="inNote">Your teams, projects and merges are waiting.</p>
+    <label>Email<input id="email" type="email" autocomplete="email" required></label>
+    <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="inErr" role="alert"></div>
+    <button id="inBtn">Sign in</button>
+    <div class="switch" id="toReg" hidden>No account yet? <a href="#register">Create one</a></div>
+  </form>
+  <form class="card" id="reg" hidden novalidate>
+    <h1 id="regTitle">Create an account</h1>
+    <p id="regNote">One account for all your teams. You also get a Personal space for working alone.</p>
+    <label>Name<input id="rname" autocomplete="name" required></label>
+    <label>Email<input id="remail" type="email" autocomplete="email" required></label>
+    <label>Password<input id="rpw" type="password" autocomplete="new-password" minlength="8" required><span style="font-weight:400;color:var(--muted);font-size:12.5px">8 or more characters</span></label>
+    <div class="err" id="regErr" role="alert"></div>
+    <button id="regBtn">Create account</button>
+    <div class="switch">Have an account? <a href="#signin">Sign in</a></div>
+  </form>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const post = (u, b) => fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(r => r.json().then(d => (r.ok ? d : { error: d.error || 'Something went wrong.' }))).catch(() => ({ error: 'Tandemi is not answering. Is it still running?' }));
+const qs = new URLSearchParams(location.search), invite = qs.get('invite');
+let info = {};
+function show() {
+  const canReg = info.allowRegister || info.firstAccount || !!invite;
+  const reg = canReg && (location.hash === '#register' || (location.pathname === '/register' && location.hash !== '#signin') || (info.firstAccount && location.hash !== '#signin'));
+  $('in').hidden = reg; $('reg').hidden = !reg; $('toReg').hidden = !canReg;
+  if (info.firstAccount) { $('regTitle').textContent = 'Create the owner account'; $('regNote').textContent = 'The first account owns this Tandemi. You also get a Personal space, and you can create teams and invite people.'; }
+  if (qs.get('bad')) $('inErr').textContent = 'That invite has expired or was used up. Ask for a new one.';
+  (reg ? $('rname') : $('email')).focus();
+}
+Promise.all([
+  fetch('/api/auth/me', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+  invite ? fetch('/api/hub/invite?code=' + encodeURIComponent(invite), { cache: 'no-store' }).then(r => r.json()).catch(() => ({})) : Promise.resolve({}),
+]).then(([d, inv]) => {
+  info = d;
+  if (d.me) { location.href = invite ? '/join/' + invite : '/'; return; }
+  if (inv.invite) { $('invited').hidden = false; $('invTeam').textContent = inv.invite.team; $('invInfo').textContent = `${inv.invite.members} ${inv.invite.members === 1 ? 'person is' : 'people are'} in it. Sign in or create an account to join.`; }
+  else if (invite) $('inErr').textContent = 'That invite has expired or was used up. Ask for a new one.';
+  show();
+});
+addEventListener('hashchange', show);
+const after = (r) => { location.href = invite ? '/join/' + invite : (r.to || '/'); };
+$('in').onsubmit = async (e) => { e.preventDefault(); $('inBtn').disabled = true; const r = await post('/api/auth/login', { email: $('email').value, password: $('pw').value }); $('inBtn').disabled = false; if (r.error) { $('inErr').textContent = r.error; $('pw').select(); } else after(r); };
+$('reg').onsubmit = async (e) => { e.preventDefault(); $('regBtn').disabled = true; const r = await post('/api/auth/register', { name: $('rname').value, email: $('remail').value, password: $('rpw').value, invite }); $('regBtn').disabled = false; if (r.error) $('regErr').textContent = r.error; else after(r); };
+</script>
+</body>
+</html>
